@@ -46,11 +46,93 @@ local SLOT_STATE_ACTIVE = 2
 local SLOT_STATE_SELECTION = 3
 local SLOT_STATE_WILDCARD = 4
 
+local PREY_OPCODE_DATA = 0xE8
+local PREY_OPCODE_PRICES = 0xE9
+
 local WILDCARD_LABEL_HEIGHT = 16
 local WILDCARD_VISIBLE_LABELS = 11
 
 local preyDescription = {}
 local searchFilterText = ''
+
+local function readPreyOutfit(msg)
+  local outfit = { type = msg:getU16() }
+  if outfit.type == 0 then
+    outfit.auxType = msg:getU16()
+    return outfit
+  end
+
+  outfit.head = msg:getU8()
+  outfit.body = msg:getU8()
+  outfit.legs = msg:getU8()
+  outfit.feet = msg:getU8()
+  outfit.addons = msg:getU8()
+  return outfit
+end
+
+local function readTimeUntilFreeReroll(msg)
+  if g_game.getProtocolVersion() >= 1252 then
+    return msg:getU32()
+  end
+  return msg:getU16()
+end
+
+local function readPreyLockType(msg)
+  if g_game.getFeature(GameTibia12Protocol) then
+    return msg:getU8()
+  end
+  return 0
+end
+
+local function parsePreyData(protocol, msg)
+  local slot = msg:getU8()
+  local state = msg:getU8()
+
+  if state == SLOT_STATE_LOCKED then
+    local unlockState = msg:getU8()
+    local timeUntilFreeReroll = readTimeUntilFreeReroll(msg)
+    local lockType = readPreyLockType(msg)
+    signalcall(g_game.onPreyLocked, slot, unlockState, timeUntilFreeReroll, lockType)
+  elseif state == SLOT_STATE_INACTIVE then
+    local timeUntilFreeReroll = readTimeUntilFreeReroll(msg)
+    local lockType = readPreyLockType(msg)
+    signalcall(g_game.onPreyInactive, slot, timeUntilFreeReroll, lockType)
+  elseif state == SLOT_STATE_ACTIVE then
+    local name = msg:getString()
+    local outfit = readPreyOutfit(msg)
+    local bonusType = msg:getU8()
+    local bonusValue = msg:getU16()
+    local bonusGrade = msg:getU8()
+    local timeLeft = msg:getU16()
+    local timeUntilFreeReroll = readTimeUntilFreeReroll(msg)
+    local lockType = readPreyLockType(msg)
+    signalcall(g_game.onPreyActive, slot, name, outfit, bonusType, bonusValue, bonusGrade, timeLeft, timeUntilFreeReroll, lockType)
+  elseif state == SLOT_STATE_SELECTION then
+    local names = {}
+    local outfits = {}
+    local count = msg:getU8()
+    for i = 1, count do
+      names[i] = msg:getString()
+      outfits[i] = readPreyOutfit(msg)
+    end
+    local timeUntilFreeReroll = readTimeUntilFreeReroll(msg)
+    local lockType = readPreyLockType(msg)
+    signalcall(g_game.onPreySelection, slot, PREY_BONUS_NONE, -1, -1, names, outfits, timeUntilFreeReroll, lockType)
+  else
+    g_logger.error("Unknown prey data state: " .. state)
+  end
+end
+
+local function parsePreyPrices(protocol, msg)
+  local price = msg:getU32()
+  local wildcard = -1
+  local directly = -1
+  if g_game.getFeature(GameTibia12Protocol) then
+    wildcard = msg:getU8()
+    directly = msg:getU8()
+  end
+  signalcall(g_game.onPreyPrice, price, wildcard, directly)
+end
 
 function bonusDescription(bonusType, bonusValue, bonusGrade)
   if bonusType == PREY_BONUS_DAMAGE_BOOST then
@@ -104,6 +186,11 @@ function timeleftTranslation(timeleft)
 end
 
 function init()
+  ProtocolGame.unregisterOpcode(PREY_OPCODE_DATA)
+  ProtocolGame.unregisterOpcode(PREY_OPCODE_PRICES)
+  ProtocolGame.registerOpcode(PREY_OPCODE_DATA, parsePreyData)
+  ProtocolGame.registerOpcode(PREY_OPCODE_PRICES, parsePreyPrices)
+
   connect(g_game, {
     onGameStart = check,
     onGameEnd = hide,
@@ -233,6 +320,9 @@ function onSpecialHover(widget, bonusType, bonusValue)
 end
 
 function terminate()
+  ProtocolGame.unregisterOpcode(PREY_OPCODE_DATA)
+  ProtocolGame.unregisterOpcode(PREY_OPCODE_PRICES)
+
   disconnect(g_game, {
     onGameStart = check,
     onGameEnd = hide,
@@ -405,6 +495,11 @@ function show(position)
   if not g_game.getFeature(GamePrey) then
     return hide()
   end
+  if preyWindow:isVisible() then
+    preyWindow:raise()
+    preyWindow:focus()
+    return
+  end
   preyWindowButton:setChecked(true)
   setUnsupportedSettings()
   preyWindow:show(true)
@@ -427,6 +522,9 @@ function show(position)
   end
   updateWildCardWindow()
 
+  if updateRerollEvent then
+    removeEvent(updateRerollEvent)
+  end
   updateRerollEvent = cycleEvent(function() updateRerollTime() end, 1000)
 end
 

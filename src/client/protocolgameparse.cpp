@@ -3373,7 +3373,7 @@ void ProtocolGame::parseTournamentLeaderboard(const InputMessagePtr& msg)
 void ProtocolGame::parseKillTracker(const InputMessagePtr& msg)
 {
     const std::string& monsterName = msg->getString();
-    const Outfit& monsterOutfit = getOutfit(msg, false);
+    const Outfit& monsterOutfit = getOutfit(msg, true);
 
     ItemVector dropItems;
 

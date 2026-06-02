@@ -981,29 +981,37 @@ NewMainWindow
 
   Panel
     id: optionsTabBar
-    size: 334 36
+    height: 36
     image-source: /images/ui/back-icons
     image-border: 1
     anchors.top: parent.top
     anchors.left: parent.left
+    anchors.right: parent.right
     margin-top: 12
     margin-left: 12
+    margin-right: 12
 
     UIButton
       id: preyWindowButton
-      size: 332 34
-      margin-left: 1
-      margin-top: 1
       anchors.left: parent.left
+      anchors.right: parent.right
       anchors.top: parent.top
+      anchors.bottom: parent.bottom
+
+    UIWidget
+      size: 34 34
+      anchors.left: parent.left
+      anchors.verticalCenter: parent.verticalCenter
+      margin-left: 1
       image-source: /images/game/prey/prey-button
-      image-clip: 0 0 332 34
-      $pressed:
-        image-clip: 0 34 332 34
-      $hover:
-        image-clip: 0 0 332 34
-      $checked:
-        image-clip: 0 34 332 34
+      image-clip: 0 0 34 34
+
+    FlatLabel
+      !text: tr('Prey Creatures')
+      width: 140
+      text-align: center
+      anchors.horizontalCenter: parent.horizontalCenter
+      anchors.verticalCenter: parent.verticalCenter
 
   PreySlotPanel
     id: slot1

@@ -23,6 +23,13 @@ local sortTypes = {
 	DESCENDING = 5
 }
 
+local function getMonsterList()
+	if modules.game_cyclopedia and modules.game_cyclopedia.getCyclopediaMonsterList then
+		return modules.game_cyclopedia.getCyclopediaMonsterList()
+	end
+	return g_things.getMonsterList()
+end
+
 function BossTracker.initSortFields()
 	sortOptions[sortTypes.NAME] = true
 	sortOptions[sortTypes.COMPLETATION] = false
@@ -49,10 +56,10 @@ function BossTracker.showTrackerData()
 		return
 	end
 
-	local monsterList = g_things.getMonsterList()
+	local monsterList = getMonsterList()
 	table.sort(BossTrackerList, function(a, b)
-		local nameA = monsterList[a[1]][1]
-		local nameB = monsterList[b[1]][1]
+		local nameA = monsterList[a[1]] and monsterList[a[1]][1] or tostring(a[1])
+		local nameB = monsterList[b[1]] and monsterList[b[1]][1] or tostring(b[1])
 		local completionA = (a[5] - a[2])
 		local completionB = (b[5] - b[2])
         local percentA = (a[2] / a[5]) * 100
@@ -346,4 +353,3 @@ function timerCooldown(widget, endTime)
 
 	widget:setTooltip(remainingText)
 end
-

@@ -39,6 +39,18 @@ FusionItemBox < UICheckBox
     anchors.top: parent.top
     anchors.horizontalCenter: parent.horizontalCenter
 
+  Label
+    id: count
+    visible: false
+    anchors.right: parent.right
+    anchors.bottom: parent.bottom
+    margin-right: 2
+    width: 24
+    height: 12
+    text-align: right
+    color: #ffffff
+    font: verdana-11px-antialised
+
 Panel
   id: fusionMenu
   anchors.fill: parent

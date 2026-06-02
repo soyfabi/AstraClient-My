@@ -1432,65 +1432,70 @@ function WeaponProficiency:refreshItemList()
         items = filteredItems
     end
 
+    self.refreshGeneration = (self.refreshGeneration or 0) + 1
+    local generation = self.refreshGeneration
     itemList:destroyChildren()
-
-    -- Populate items with click handlers. The grid itself owns scrolling, so do
-    -- not cap this to the number of visible cells.
-    local index = 1
-    for _, marketItem in ipairs(items) do
-        local child = g_ui.createWidget("ItemBox", itemList, "widget_" .. index)
-        local itemWidget = child and child:getChildById('item')
-        if itemWidget and marketItem.displayItem then
-            -- Use stored displayId (guaranteed non-zero) instead of displayItem:getId()
-            local displayId = marketItem.displayId or marketItem.originalId
-            local cacheId = marketItem.originalId or displayId
-            itemWidget:setItemId(displayId)
-            if ItemsDatabase and ItemsDatabase.setRarityItem then
-                ItemsDatabase.setRarityItem(itemWidget, itemWidget:getItem())
-            end
-            -- Add tooltip with item name
-            child:setTooltip(marketItem.marketData.name or "")
-
-            -- Add stars based on proficiency level
-            local starPanel = child:getChildById('starsBackground')
-            if starPanel then
-                starPanel:destroyChildren()
-
-                -- Get experience and calculate level
-                local cacheEntry = self.cacheList[cacheId]
-                local exp = cacheEntry and cacheEntry.exp or 0
-                local weaponLevel = ProficiencyData:getCurrentLevelByExp(marketItem.displayItem, exp, false,
-                    marketItem.thingType, marketItem.marketData) or 0
-
-                -- Create star widgets for each level achieved
-                if weaponLevel > 0 then
-                    local mastery = isMasteryAchieved(marketItem.displayItem, cacheId, marketItem.thingType,
-                        marketItem.marketData)
-                    for i = 1, weaponLevel do
-                        local star = g_ui.createWidget("MiniStar", starPanel)
-                        if star and mastery then
-                            star:setImageSource(proficiencyImage("icon-star-tiny-gold"))
-                        end
-                    end
-                end
-            end
-
-            -- Add click handler
-            child.onClick = function()
-                WeaponProficiency:selectItem(displayId, marketItem)
-            end
-        end
-
-        index = index + 1
-    end
-
-    if itemList.updateLayout then
-        itemList:updateLayout()
-    end
-
     if self.itemListScroll then
         self.itemListScroll:setValue(0)
     end
+
+    -- Build the complete scrollable grid in small batches so opening the
+    -- window does not stall the render thread on large weapon catalogs.
+    local index = 1
+    local function appendBatch()
+        if generation ~= self.refreshGeneration or not self.window then
+            return
+        end
+
+        local lastIndex = math.min(index + 47, #items)
+        for itemIndex = index, lastIndex do
+            local marketItem = items[itemIndex]
+            local child = g_ui.createWidget("ItemBox", itemList, "widget_" .. itemIndex)
+            local itemWidget = child and child:getChildById('item')
+            if itemWidget and marketItem.displayItem then
+                local displayId = marketItem.displayId or marketItem.originalId
+                local cacheId = marketItem.originalId or displayId
+                itemWidget:setItemId(displayId)
+                if ItemsDatabase and ItemsDatabase.setRarityItem then
+                    ItemsDatabase.setRarityItem(itemWidget, itemWidget:getItem())
+                end
+                child:setTooltip(marketItem.marketData.name or "")
+
+                local starPanel = child:getChildById('starsBackground')
+                if starPanel then
+                    starPanel:destroyChildren()
+                    local cacheEntry = self.cacheList[cacheId]
+                    local exp = cacheEntry and cacheEntry.exp or 0
+                    local weaponLevel = ProficiencyData:getCurrentLevelByExp(marketItem.displayItem, exp, false,
+                        marketItem.thingType, marketItem.marketData) or 0
+                    if weaponLevel > 0 then
+                        local mastery = isMasteryAchieved(marketItem.displayItem, cacheId, marketItem.thingType,
+                            marketItem.marketData)
+                        for _ = 1, weaponLevel do
+                            local star = g_ui.createWidget("MiniStar", starPanel)
+                            if star and mastery then
+                                star:setImageSource(proficiencyImage("icon-star-tiny-gold"))
+                            end
+                        end
+                    end
+                end
+
+                child.onClick = function()
+                    WeaponProficiency:selectItem(displayId, marketItem)
+                end
+            end
+        end
+
+        index = lastIndex + 1
+        if itemList.updateLayout then
+            itemList:updateLayout()
+        end
+        if index <= #items then
+            scheduleEvent(appendBatch, 1)
+        end
+    end
+
+    appendBatch()
 end
 
 -- Handle category change from dropdown

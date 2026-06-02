@@ -283,7 +283,7 @@ function executeButtonFunctionality(button)
   elseif button:getParent():getId() == "unjustifiedPoinsWidget" then
     modules.game_unjustifiedpoints:toggle()
   elseif button:getParent():getId() == "preyDialog" then
-    modules.game_prey.show()
+    modules.game_prey.toggle()
   elseif button:getParent():getId() == "preyWidget" then
     modules.game_prey:toggleTracker()
   elseif button:getParent():getId() == "rewardWallDialog" then

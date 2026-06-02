@@ -24,6 +24,19 @@ local sortButtons = {
 local enableCategories = { 17, 18, 19, 20, 21, 27 }
 local enableClassification = {1, 3, 7, 8, 15, 17, 18, 19, 20, 24, 27 }
 
+local function getCategoryName(category, value)
+	if type(value) == "string" and tonumber(value) == nil then
+		return value
+	end
+	if getObjectCategoryName then
+		local name = getObjectCategoryName(category)
+		if name and name ~= "" then
+			return name:gsub("\n", " ")
+		end
+	end
+	return tostring(value or category)
+end
+
 function CyclopediaItems.terminate()
 	CyclopediaItems.saveJson()
 end
@@ -190,7 +203,7 @@ function CyclopediaItems.showCategories()
 
 	local categoryList = {}
 	for k, v in pairs(g_things.getMarketCategories()) do
-		table.insert(categoryList, {k, v})
+		table.insert(categoryList, {k, getCategoryName(k, v)})
 	end
 
 	table.insert(categoryList, {30, "Gold"})
@@ -214,10 +227,14 @@ function CyclopediaItems.showCategories()
   end
 
   local firstWidget = VisibleCyclopediaPanel.leftInfo.categoriesList:getFirstChild()
-  VisibleCyclopediaPanel.leftInfo.categoriesList:moveChildToIndex(firstWidget, 2)
+  if firstWidget then
+    VisibleCyclopediaPanel.leftInfo.categoriesList:moveChildToIndex(firstWidget, 2)
+  end
 
   local lastWidget = VisibleCyclopediaPanel.leftInfo.categoriesList:getChildById('Weapons: All')
-  VisibleCyclopediaPanel.leftInfo.categoriesList:moveChildToIndex(lastWidget, VisibleCyclopediaPanel.leftInfo.categoriesList:getChildCount())
+  if lastWidget then
+    VisibleCyclopediaPanel.leftInfo.categoriesList:moveChildToIndex(lastWidget, VisibleCyclopediaPanel.leftInfo.categoriesList:getChildCount())
+  end
 
   VisibleCyclopediaPanel.leftInfo.itemList.onChildFocusChange = function(self, selected) CyclopediaItems.itemListChildFocus(self, selected) end
 
@@ -226,7 +243,7 @@ function CyclopediaItems.showCategories()
 end
 
 function CyclopediaItems.categoryListChildFocus(self, selected)
-	if not VisibleCyclopediaPanel or VisibleCyclopediaPanel:getId() ~= 'itemDataPanel' then return end
+	if not VisibleCyclopediaPanel or VisibleCyclopediaPanel:getId() ~= 'itemDataPanel' or not selected then return end
 
 	if VisibleCyclopediaPanel.leftInfo.itemList then
 		VisibleCyclopediaPanel.leftInfo.itemList:destroyChildren()
@@ -273,7 +290,7 @@ function CyclopediaItems.categoryListChildFocus(self, selected)
 	end
 
 	VisibleCyclopediaPanel.leftInfo.itemList.onChildFocusChange = function(self, selected) CyclopediaItems.itemListChildFocus(self, selected) end
-	for i, itemInfo in ipairs(marketItems[selected:getActionId()]) do
+	for i, itemInfo in ipairs(marketItems[selected:getActionId()] or {}) do
 		if not CyclopediaItems.checkSortOptions(itemInfo) then
 			goto Continue
 		end
@@ -311,7 +328,14 @@ end
 function CyclopediaItems.itemListChildFocus(self, selected)
   if not selected or not selected.item then return end
 
+  local item = selected.item:getItem()
   VisibleCyclopediaPanel.leftInfo.imageWidget.itemImage:setItemId(selected.item:getItemId())
+  if item then
+    local description = item:getDescription() or ""
+    CyclopediaItems.showItemDescription({
+      { detail = "Description", description = description ~= "" and description or item:getName() or "" }
+    })
+  end
   g_game.sendInspectionObject(3, selected.item:getItemId(), 0)
 
   VisibleCyclopediaPanel.panelitemshide:setVisible(true)

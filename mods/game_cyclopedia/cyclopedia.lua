@@ -372,6 +372,7 @@ function onOptionChange(widget)
   elseif widget.category:getText() == 'Character' then
     VisibleCyclopediaPanel = g_ui.createWidget('CharacterDataPanel', cyclopediaWindow.optionsCharacterPanel)
     VisibleCyclopediaPanel:setId('CharacterDataPanel')
+    Character.loadLocalPlayerData()
 
     -- Request resources
     g_game.requestResource(ResourceBank)

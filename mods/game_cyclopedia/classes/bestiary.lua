@@ -209,13 +209,17 @@ function Bestiary.bestiaryOverview()
       goto continue
 		end
 
-    local name = string.capitalize(monster[1])
+    local unlocked = currentLevel > 1
+    local name = unlocked and string.capitalize(monster[1]) or "?"
+    local monsterShader = unlocked and "" or "outfit_black"
     widget:setTooltip(name)
     widget:setText(short_text(name, 14))
-    widget:recursiveGetChildById("monster"):setOutfit({type = monster[2], auxType = monster[3], head = monster[4], body = monster[5], legs = monster[6], feet = monster[7], addons = monster[8]})
+    widget:recursiveGetChildById("monster"):setOutfit({type = monster[2], auxType = monster[3], head = monster[4], body = monster[5], legs = monster[6], feet = monster[7], addons = monster[8], shader = monsterShader})
     widget:recursiveGetChildById("monster"):setTooltip(name)
-    widget:recursiveGetChildById("monster").onClick = function() backMonster = name; g_game.bestiaryMonsterData(monsterId) end
-    widget:recursiveGetChildById("monsterButton").onClick = function() backMonster = name; g_game.bestiaryMonsterData(monsterId) end
+    if unlocked then
+      widget:recursiveGetChildById("monster").onClick = function() backMonster = name; g_game.bestiaryMonsterData(monsterId) end
+      widget:recursiveGetChildById("monsterButton").onClick = function() backMonster = name; g_game.bestiaryMonsterData(monsterId) end
+    end
     widget.totalKill:setText(currentLevel - 1 .." / 3")
     if extraExperience > 0 then
       widget.soulCoreIcon:setVisible(true)

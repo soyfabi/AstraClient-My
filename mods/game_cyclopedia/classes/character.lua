@@ -70,6 +70,43 @@ local function getWindowPanel()
 	return windowPanel
 end
 
+function Character.loadLocalPlayerData()
+	local player = g_game.getLocalPlayer()
+	if not player then
+		return
+	end
+
+	local outfit = player:getOutfit()
+	local playerName = player:getName()
+	basePlayerData = {
+		name = playerName,
+		vocation = g_game.getVocationName(player:getVocation()),
+		level = player:getLevel(),
+		outfit = outfit,
+		title = ""
+	}
+	inspectPlayer = { name = playerName, outfit = outfit, playerData = {} }
+	inspectItems = {}
+
+	for slot = InventorySlotFirst, InventorySlotLast do
+		local item = player:getInventoryItem(slot)
+		if item then
+			local itemName = item:getName()
+			if not itemName or itemName == "" then
+				itemName = getItemServerName(item:getId())
+			end
+			inspectItems[slot] = {
+				item = item,
+				itemName = itemName,
+				imbuingSlots = {},
+				descriptions = {
+					{ label = "Description", content = item:getDescription() or "" }
+				}
+			}
+		end
+	end
+end
+
 function Character.onResourceBalance()
     if not cyclopediaWindow or not cyclopediaWindow:isVisible() then
         return
@@ -111,6 +148,12 @@ function Character.initMainWindow()
 	VisibleCyclopediaPanel.outfitWindow.levelLabel:setText("Level " .. (basePlayerData.level and basePlayerData.level or 0))
 
 	windowPanel.itemInfor:destroyChildren()
+	windowPanel.itemsPanel:destroyChildren()
+	local buttonsWindow = g_ui.getRootWidget():recursiveGetChildById('buttonsWindow')
+	if not buttonsWindow then
+		return
+	end
+	buttonsWindow.buttonPanel:destroyChildren()
 
 	for _, data in pairs(inspectPlayer.playerData) do
 		local widget = g_ui.createWidget("InspectLabel", windowPanel.itemInfor)
@@ -144,7 +187,6 @@ function Character.initMainWindow()
 	local buttonNames = {"General Stats","Battle Results","Achievements","Item Summary","Appearances","Character Titles"}
 	for k, v in pairs(buttonNames) do
 		buttonspack[k] = "off"
-		local buttonsWindow = g_ui.getRootWidget():recursiveGetChildById('buttonsWindow')
 		local SlotPanel = g_ui.createWidget('OptionsPanel', buttonsWindow.buttonPanel)
 		SlotPanel.buttons:setIcon("/game_cyclopedia/images/ui/icon/icon-character-"..k)
 		SlotPanel.buttons:setText(v)

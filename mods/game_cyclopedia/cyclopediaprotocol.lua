@@ -34,6 +34,27 @@ local function cacheCreatureInfo(raceId, creature)
   }
 end
 
+function cacheCyclopediaMonster(raceId, creature)
+  if not creature then
+    return
+  end
+
+  if creature.name then
+    cacheCreatureInfo(raceId, creature)
+    return
+  end
+
+  cacheCreatureInfo(raceId, {
+    name = creature[1],
+    type = creature[2],
+    head = creature[4],
+    body = creature[5],
+    legs = creature[6],
+    feet = creature[7],
+    addons = creature[8]
+  })
+end
+
 function getCyclopediaMonsterList()
   local monsters = g_things.getMonsterList()
   for raceId, creature in pairs(monsterCache) do

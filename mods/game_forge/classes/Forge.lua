@@ -36,6 +36,31 @@ local function getClassPrice(classification, tier)
 	return (fusionPrices and fusionPrices[tier]) or 0
 end
 
+local function setupForgeItemBox(widget, item, count)
+	local amount = tonumber(count) or 0
+	widget.item:setItem(item)
+	widget.item:setItemCount(amount)
+	widget.forgeCount = amount
+
+	local countLabel = widget:getChildById('count')
+	if countLabel then
+		countLabel:setText(tostring(amount))
+		countLabel:setVisible(amount > 1)
+	end
+end
+
+local function getForgeWidgetCount(widget)
+	if widget and widget.forgeCount then
+		return tonumber(widget.forgeCount) or 0
+	end
+
+	if widget and widget.item and widget.item.getItemCount then
+		return tonumber(widget.item:getItemCount()) or 0
+	end
+
+	return 0
+end
+
 function ForgeSystem.init(classPrice, transferMap, fusionPrices, transferPrices, baseMultipier, slivers, totalSlivers, dustCost, dustPrice, maxDust, dustFusion, convergenceDustFusion, dustTransfer, convergenceDustTransfer, success, improveRateSuccess, tierLoss)
 	ForgeSystem.classPrice = classPrice
 	ForgeSystem.transferMap = transferMap
@@ -171,12 +196,12 @@ function ForgeSystem.updateFusion()
 	if fusionMenu.converFusion:isVisible() then
 		data = ForgeSystem.fusionConvergenceData
 	end
-	
+
 	for _, fusion in pairs(data) do
 		local itemId = fusion[1]
 		local tier = fusion[2]
 		local count = fusion[3]
-		
+
 		if itemId > 0 then
 			local widget = g_ui.createWidget('FusionItemBox', itemPanel)
 
@@ -184,9 +209,10 @@ function ForgeSystem.updateFusion()
 			if itemPtr then
 				itemPtr:setTier(tier)
 
-				widget.item:setItem(itemPtr)
-				widget.item:setItemCount(count)
+				setupForgeItemBox(widget, itemPtr, count)
 				widget.itemPtr = itemPtr
+				widget.classification = fusion[5] or 0
+				widget.category = fusion[6] or 0
 
 				selectedItemFusionRadio:addWidget(widget)
 			end
@@ -197,7 +223,7 @@ end
 -- configure panel conversion
 local function ConfigureFusionConversionPanel(selectedWidget)
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCount())
+	local itemCount = getForgeWidgetCount(selectedWidget)
 	local itemTier = itemPtr:getTier()
 
 	ForgeSystem.fusionItem = itemPtr
@@ -242,11 +268,11 @@ local function ConfigureFusionConversionPanel(selectedWidget)
 
 	local function createConversionWidget(itemPtr, fusion)
 		local itemId = fusion[1]
-		
+
 		if itemId <= 0 then
 			return false
 		end
-		
+
 		local firstCategory = getItemCategoryBySlot(itemId)
 		local secondCategory = getItemCategoryBySlot(itemPtr:getId())
 
@@ -273,9 +299,10 @@ local function ConfigureFusionConversionPanel(selectedWidget)
 		if newItemPtr then
 			newItemPtr:setTier(fusion[2])
 
-			widget.item:setItem(newItemPtr)
-			widget.item:setItemCount(showItemCount)
+			setupForgeItemBox(widget, newItemPtr, showItemCount)
 			widget.itemPtr = newItemPtr
+			widget.classification = fusion[5] or 0
+			widget.category = fusion[6] or 0
 
 			selectedItemFusionConvectionRadio:addWidget(widget)
 		end
@@ -304,7 +331,7 @@ end
 -- configure normal panel
 local function ConfigureFusionPanel(selectedWidget)
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCountOrSubType())
+	local itemCount = getForgeWidgetCount(selectedWidget)
 	local itemTier = itemPtr:getTier()
 
 	ForgeSystem.fusionItem = itemPtr
@@ -339,7 +366,7 @@ local function ConfigureFusionPanel(selectedWidget)
 	fusionMenu.itemsFusion.fusionButton.itemTo.tierflags:setImageClip( itemTier * 9 .." 0 9 8")
 	fusionMenu.itemsFusion.fusionButton.itemTo.tierflags:setVisible(true)
 
-	local classification = itemPtr:getClassification()
+	local classification = selectedWidget.classification or itemPtr:getClassification()
 	local price = getClassPrice(classification, itemTier)
 
 	ForgeSystem.fusionPrice = price
@@ -691,7 +718,7 @@ function ForgeSystem.updateTransfer()
 	for _, fusion in pairs(data) do
 		local itemId = fusion[1]
 		local tier = fusion[2]
-		
+
 		if itemId > 0 and not itemsVec[itemId .. "." .. tier] then
 			local widget = g_ui.createWidget('FusionItemBox', itemPanel)
 
@@ -699,10 +726,11 @@ function ForgeSystem.updateTransfer()
 			if itemPtr then
 				itemPtr:setTier(tier)
 
-				widget.item:setItem(itemPtr)
-				widget.item:setItemCount(fusion[3])
+				setupForgeItemBox(widget, itemPtr, fusion[3])
 				widget.itemPtr = itemPtr
 				widget.subItems = fusion[4]
+				widget.classification = fusion[5] or 0
+				widget.category = fusion[6] or 0
 
 				selectedItemFusionRadio:addWidget(widget)
 
@@ -717,7 +745,7 @@ local function ConfigureTransferPanel(selectedWidget)
 	ForgeSystem.fusionSelectedItem = 0
 
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCount())
+	local itemCount = getForgeWidgetCount(selectedWidget)
 	local itemTier = itemPtr:getTier()
 	local subItems = selectedWidget.subItems
 
@@ -740,13 +768,12 @@ local function ConfigureTransferPanel(selectedWidget)
 		if item == itemPtr:getId() or item <= 0 then
 			goto continue
 		end
-		
+
 		local widget = g_ui.createWidget('FusionItemBox', itemsTransferPanel)
 		local newItemPtr = Item.create(item, 1)
-		
+
 		if newItemPtr then
-			widget.item:setItem(newItemPtr)
-			widget.item:setItemCount(count)
+			setupForgeItemBox(widget, newItemPtr, count)
 			widget.itemPtr = newItemPtr
 			selectedItemFusionConvectionRadio:addWidget(widget)
 		end
@@ -783,7 +810,7 @@ local function ConfigureTransferPanel(selectedWidget)
 	transferMenu.itemsFusion.transferButton.item.tierflags:setVisible(true)
 	transferMenu.itemsFusion.transferButton.item.tierflags:setImageClip( (itemTier - 1) * 9 .." 0 9 8")
 
-	local classification = itemPtr:getClassification()
+	local classification = selectedWidget.classification or itemPtr:getClassification()
 	local price = getClassPrice(classification, itemTier - 1)
 	ForgeSystem.fusionPrice = price
 
@@ -800,7 +827,7 @@ local function ConfigureTransferConvergencePanel(selectedWidget)
 	ForgeSystem.fusionSelectedItem = 0
 
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCount())
+	local itemCount = getForgeWidgetCount(selectedWidget)
 	local itemTier = itemPtr:getTier()
 	local subItems = selectedWidget.subItems
 
@@ -822,13 +849,12 @@ local function ConfigureTransferConvergencePanel(selectedWidget)
 		if item == itemPtr:getId() or item <= 0 then
 			goto continue
 		end
-		
+
 		local widget = g_ui.createWidget('FusionItemBox', itemsTransferPanel)
 		local newItemPtr = Item.create(item, 1)
-		
+
 		if newItemPtr then
-			widget.item:setItem(newItemPtr)
-			widget.item:setItemCount(count)
+			setupForgeItemBox(widget, newItemPtr, count)
 			widget.itemPtr = newItemPtr
 			selectedItemFusionConvectionRadio:addWidget(widget)
 		end
@@ -922,8 +948,6 @@ end
 
 function onSelectionForgeTransfer(widget, selectedWidget)
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCount())
-	local itemTier = itemPtr:getTier()
 
 	ForgeSystem.fusionSelectedItem = itemPtr:getId()
 
@@ -933,8 +957,6 @@ end
 
 function onSelectionForgeConversionTransfer(widget, selectedWidget)
 	local itemPtr = selectedWidget.itemPtr
-	local itemCount = tonumber(selectedWidget.item:getItemCount())
-	local itemTier = itemPtr:getTier()
 
 	ForgeSystem.fusionSelectedItem = itemPtr:getId()
 

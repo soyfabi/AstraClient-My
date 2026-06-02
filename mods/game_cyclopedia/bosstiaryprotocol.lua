@@ -56,6 +56,9 @@ local function parseWindow(_, msg)
     bosses[index][4] = msg:getU8()
     if msg:getUnreadSize() > ((count - index) * 10) then
       bosses[index][5] = readCreatureInfo(msg)
+      if cacheCyclopediaMonster then
+        cacheCyclopediaMonster(bosses[index][1], bosses[index][5])
+      end
     end
   end
   signalcall(g_game.onBosstiaryWindowData, bosses)
@@ -165,7 +168,7 @@ end
 function BosstiaryProtocol.tracker(raceId, enabled)
   local msg = OutputMessage.create()
   msg:addU8(OPCODE_TRACKER)
-  msg:addU16(raceId or 0)
+  msg:addU32(raceId or 0)
   msg:addU8(enabled and 1 or 0)
   sendMessage(msg)
 end
