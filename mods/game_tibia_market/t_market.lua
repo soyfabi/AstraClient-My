@@ -99,6 +99,12 @@ local function copyMarketData(itemType, itemId, category, name)
 	return marketData
 end
 
+local function setItemRarityFrame(widget, itemOrId)
+	if ItemsDatabase and ItemsDatabase.setRarityItem then
+		ItemsDatabase.setRarityItem(widget, itemOrId)
+	end
+end
+
 function init()
   marketWindow = g_ui.displayUI('t_market')
   mainMarket = marketWindow.contentPanel.mainMarket
@@ -813,6 +819,7 @@ function onItemListValueChange(scroll, value, delta)
 		local tier = sortButtons["tierFilter"] or 0
 		local count = getDepotItemCount(data.thingType:getId(), tier)
 		widget.item:setItemId(data.thingType:getId())
+		setItemRarityFrame(widget.item, data.thingType:getId())
 
 		widget.name:setTooltip('')
 		widget.name:setText(data.marketData.name)
@@ -925,6 +932,7 @@ function onSelectChildCategory(widget, selected, keepFilter)
 		local widget = g_ui.createWidget('MarketItemList', itemList)
 		if widget.setIgnoreEqualFocus then widget:setIgnoreEqualFocus(true) end
 		widget.item:setItemId(itemInfo.thingType:getId())
+		setItemRarityFrame(widget.item, itemInfo.thingType:getId())
 
 		widget.name:setText(itemInfo.marketData.name)
 		if widget.name.isOfflimit and widget.name:isOfflimit() then
@@ -1021,6 +1029,7 @@ function onSelectChildItem(widget, selected, oldFocus)
 
 	marketWindow.contentPanel.selectedItem:setItemId(itemID)
 	marketWindow.contentPanel.selectedItem:setTier(itemTier)
+	setItemRarityFrame(marketWindow.contentPanel.selectedItem, itemID)
 
 	lastSelectedItem = {itemId = itemID, tier = itemTier, lastWidget = selected}
 
@@ -1578,6 +1587,7 @@ function onSearchItem(textField)
 		local widget = g_ui.createWidget('MarketItemList', itemList)
 		if widget.setIgnoreEqualFocus then widget:setIgnoreEqualFocus(true) end
 		widget.item:setItemId(itemInfo.thingType:getId())
+		setItemRarityFrame(widget.item, itemInfo.thingType:getId())
 
 		widget.name:setText(itemInfo.marketData.name)
 		if widget.name.isOfflimit and widget.name:isOfflimit() then
@@ -1704,6 +1714,7 @@ function onShowRedirect(item)
 		local widget = g_ui.createWidget('MarketItemList', itemList)
 		if widget.setIgnoreEqualFocus then widget:setIgnoreEqualFocus(true) end
 		widget.item:setItemId(itemInfo.thingType:getId())
+		setItemRarityFrame(widget.item, itemInfo.thingType:getId())
 
 		widget.name:setText(itemInfo.marketData.name)
 		if widget.name.isOfflimit and widget.name:isOfflimit() then

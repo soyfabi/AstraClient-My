@@ -543,13 +543,13 @@ ChannelEvent = {
 
 SpeakTypesSettings = {
   none = {},
-  consoleYellow =         { color = TextColors.yellowSay,                                   consoleTab='Local Chat' },
+  consoleYellow =         { color = TextColors.yellow,                                      consoleTab='Local Chat' },
   private =               { color = TextColors.lightblue,                                   private = true,                  screenTarget='privateLabel', visibleTime=3000},
   privateRed =            { color = TextColors.red, private = true },
   privatePlayerToPlayer = { color = TextColors.blue, private = true },
   privatePlayerToNpc =    { color = TextColors.blue, private = true, npcChat = true },
   privateNpcToPlayer =    { color = TextColors.lightblue,                                   private = true,           npcChat = true },
-  channelYellow =         { color = TextColors.yellowSay },
+  channelYellow =         { color = TextColors.yellow },
   channelWhite =          { color = TextColors.white },
   channelRed =            { color = TextColors.red },
   channelOrange =         { color = TextColors.orangeChat },
@@ -624,7 +624,7 @@ MessageTypes = {
   [MessageModes.HealOthers] = SpeakTypesSettings.statusOthers,
   [MessageModes.ExpOthers] = SpeakTypesSettings.statusOthers,
 
-  [MessageModes.TradeNpc] = SpeakTypesSettings.centerWhite,
+  [MessageModes.TradeNpc] = SpeakTypesSettings.centerGreen,
   [MessageModes.Guild] = SpeakTypesSettings.centerWhite,
   [MessageModes.Party] = SpeakTypesSettings.centerGreen,
   [MessageModes.PartyManagement] = SpeakTypesSettings.centerWhite,

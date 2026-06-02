@@ -65,6 +65,7 @@ function refreshContainerItems(container)
     local itemWidget = container.itemsPanel:getChildById('item' .. slot)
     local item = container:getItem(slot)
     itemWidget:setItem(item)
+    ItemsDatabase.setRarityItem(itemWidget, item)
     ItemsDatabase.setTier(itemWidget, item)
     updateFlags(item, itemWidget)
   end
@@ -252,6 +253,7 @@ function onContainerOpen(container, previousContainer)
     local itemSlot = container:getItem(slot)
 
     itemWidget:setItem(itemSlot)
+    ItemsDatabase.setRarityItem(itemWidget, itemSlot)
     ItemsDatabase.setTier(itemWidget, itemSlot)
     itemWidget:setMargin(0)
     itemWidget.position = container:getSlotPosition(slot)
@@ -332,6 +334,7 @@ function onContainerUpdateItem(container, slot, item, oldItem)
   if not container.window then return end
   local itemWidget = container.itemsPanel:getChildById('item' .. slot)
   itemWidget:setItem(item)
+  ItemsDatabase.setRarityItem(itemWidget, item)
   ItemsDatabase.setTier(itemWidget, item)
   if itemWidget then
     updateFlags(item, itemWidget)

@@ -1457,7 +1457,7 @@ function WeaponProficiency:refreshItemList()
                 local cacheId = marketItem.originalId or displayId
                 itemWidget:setItemId(displayId)
                 if ItemsDatabase and ItemsDatabase.setRarityItem then
-                    ItemsDatabase.setRarityItem(itemWidget, itemWidget:getItem())
+                    ItemsDatabase.setRarityItem(itemWidget, cacheId)
                 end
                 child:setTooltip(marketItem.marketData.name or "")
 
@@ -1540,6 +1540,9 @@ function WeaponProficiency:selectItem(itemId, marketItem)
     -- Set item using setItem method
     if itemIconWidget and displayItem then
         itemIconWidget:setItem(displayItem)
+        if ItemsDatabase and ItemsDatabase.setRarityItem then
+            ItemsDatabase.setRarityItem(itemIconWidget, cacheId)
+        end
     end
 
     -- Destroy and recreate perk panels for fresh display

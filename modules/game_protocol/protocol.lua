@@ -32,7 +32,9 @@ local ServerPackets = {
 	Highscores = 0xB1,
 	Inspection = 0x76,
 	TeamFinderList = 0x2D,
-	TeamFinderLeader = 0x2C
+	TeamFinderLeader = 0x2C,
+	ItemValues = 0xC6,
+	ItemDetails = 0xC7
 }
 
 -- Server Types
@@ -67,11 +69,65 @@ function terminate()
 end
 
 function registerProtocol()
-  if registredOpcodes ~= nil or not g_game.getFeature(GameTibia12Protocol) then
+  if registredOpcodes ~= nil then
     return
   end
 
   registredOpcodes = {}
+
+  registerOpcode(ServerPackets.ItemValues, function(protocol, msg)
+	local size = msg:getU16()
+	for i = 1, size do
+		local itemId = msg:getU16()
+		local value = msg:getU32()
+		if ItemsDatabase and ItemsDatabase.registerServerItemValue then
+			ItemsDatabase.registerServerItemValue(itemId, value)
+		end
+	end
+  end)
+
+  registerOpcode(ServerPackets.ItemDetails, function(protocol, msg)
+	local itemId = msg:getU16()
+	local defaultValue = msg:getU32()
+	local defaultBuyPrice = msg:getU32()
+	local averageMarketValue = msg:getU32()
+	local descriptions = {}
+	local descriptionCount = msg:getU8()
+	for i = 1, descriptionCount do
+		descriptions[#descriptions + 1] = {
+			detail = msg:getString(),
+			description = msg:getString()
+		}
+	end
+
+	local npcSaleData = {}
+	local npcCount = msg:getU16()
+	for i = 1, npcCount do
+		npcSaleData[#npcSaleData + 1] = {
+			name = msg:getString(),
+			location = msg:getString(),
+			buyPrice = msg:getU32(),
+			salePrice = msg:getU32(),
+			currencyQuestFlagDisplayName = msg:getString()
+		}
+	end
+
+	if ItemsDatabase and ItemsDatabase.registerServerItemDetails then
+		ItemsDatabase.registerServerItemDetails(itemId, {
+			defaultValue = defaultValue,
+			defaultBuyPrice = defaultBuyPrice,
+			averageMarketValue = averageMarketValue,
+			description = descriptions[1] and descriptions[1].description or "",
+			descriptions = descriptions,
+			npcSaleData = npcSaleData
+		})
+	end
+	signalcall(g_game.onItemDetails, itemId)
+  end)
+
+  if not g_game.getFeature(GameTibia12Protocol) then
+    return
+  end
 
   registerOpcode(ServerPackets.TeamFinderLeader, function(protocol, msg)
 	local bool = msg:getU8() -- reset
@@ -672,7 +728,7 @@ function unregisterProtocol()
   if registredOpcodes == nil then
     return
   end
-  for _, opcode in ipairs(registredOpcodes) do
+  for opcode in pairs(registredOpcodes) do
     ProtocolGame.unregisterOpcode(opcode)
   end
   registredOpcodes = nil

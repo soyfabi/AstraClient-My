@@ -69,6 +69,7 @@ function init()
   connect(g_game, {
     onResourceBalance = Charm.onResourceBalance,
     onInspection = CyclopediaItems.onInspection,
+    onItemDetails = CyclopediaItems.onItemDetails,
     onMonsterTrackerData = Bestiary.bestiaryTracker,
     onCharmData = Charm.onCharmData,
     updateBestiaryMonsterData = Bestiary.updateBestiaryMonsterData,
@@ -181,7 +182,8 @@ function terminate()
 
   disconnect(g_game, {
     onResourceBalance = Charm.onResourceBalance,
-    onInspection = onInspection,
+    onInspection = CyclopediaItems.onInspection,
+    onItemDetails = CyclopediaItems.onItemDetails,
     onCharmData = Charm.onCharmData,
     onMonsterTrackerData = Bestiary.bestiaryTracker,
     updateBestiaryGroup = Bestiary.updateBestiaryGroup,

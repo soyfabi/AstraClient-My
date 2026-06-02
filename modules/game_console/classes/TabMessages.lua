@@ -226,8 +226,13 @@ function TabMessages:addMessage(name, level, mode, text, statement, groupId)
     local lastMessage = self.messages[MAX_LINES]
 
     -- check format text
-    if mt and mt.colored then
-        text = text:tocolored()
+    if type(text) == 'string' then
+        local hasColorLoot = ItemsDatabase and ItemsDatabase.hasColorLootMarkup and ItemsDatabase.hasColorLootMarkup(text)
+        if hasColorLoot and ItemsDatabase.setColorLootMessage then
+            text = ItemsDatabase.setColorLootMessage(text, mt and mt.color)
+        elseif mt and mt.colored then
+            text = text:tocolored(mt.color)
+        end
     end
 
     lastMessage:setup(name, level, mode, text, statement, groupId)

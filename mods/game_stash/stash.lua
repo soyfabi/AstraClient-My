@@ -11,7 +11,7 @@ local otherOption = nil
 local supplyStashProtocolRegistered = false
 local OPCODE_SUPPLY_STASH_REQUEST = 0x28
 local OPCODE_SUPPLY_STASH_SEND = 0x29
-local SUPPLY_STASH_DETAILS_MARKER = 0x5353
+local SUPPLY_STASH_DETAILS_MARKER = 0x5354
 local ACTION_OPEN = 1
 local ACTION_STOW_ALL = 2
 local ACTION_WITHDRAW = 3
@@ -77,12 +77,18 @@ local function buildStashItem(row, details)
   marketData.category = itemDetails.category or marketData.category or 9
   marketData.categoryName = marketCategoryNames[marketData.category] or "Others"
 
+  local defaultValue = tonumber(itemDetails.defaultValue) or 0
+  local marketValue = tonumber(itemDetails.marketValue) or 0
+  if ItemsDatabase and ItemsDatabase.registerServerItemValue then
+    ItemsDatabase.registerServerItemValue(itemId, math.max(defaultValue, marketValue))
+  end
+
   return {
     itemId = itemId,
     itemCount = row.amount,
     tier = row.tier or 0,
-    marketValue = 0,
-    defaultValue = 0,
+    marketValue = marketValue,
+    defaultValue = defaultValue,
     marketData = marketData,
     npcSaleData = {}
   }
@@ -109,7 +115,8 @@ local function parseSupplyStash(protocolGame, msg)
       details[itemId] = {
         name = msg:getString(),
         category = msg:getU16(),
-        stackable = msg:getU8() ~= 0
+        stackable = msg:getU8() ~= 0,
+        defaultValue = msg:getU32()
       }
     end
   end
@@ -360,6 +367,9 @@ function refreshStashItems(searchText)
 
     local itemWidget = itemBox:getChildById('item')
     itemWidget:setItem(stashItem)
+    if ItemsDatabase and ItemsDatabase.setRarityItem then
+      ItemsDatabase.setRarityItem(itemWidget, stashItem)
+    end
     if ItemsDatabase and ItemsDatabase.setTier then
       ItemsDatabase.setTier(itemWidget, stashItem)
     end

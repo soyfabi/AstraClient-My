@@ -120,7 +120,9 @@ function Message:updateLabel(label, tab)
         if self.groupId > 1 then
             label:setText(self:format())
         else
-            label:setColorText(self:format())
+            local colored = {}
+            setStringColor(colored, self:format(), mt and mt.color or 'white')
+            label:setColoredText(colored)
         end
     end
 

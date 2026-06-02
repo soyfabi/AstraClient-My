@@ -12,6 +12,8 @@ local lastSelectedCategory = nil
 local oldBuyChild = nil
 local oldSaleChild = nil
 local itemsData = {}
+local pendingItemDetails = {}
+local OPCODE_ITEM_DETAILS = 0xC7
 
 local sortButtons = {
 	["levelButton"] = false,
@@ -35,6 +37,80 @@ local function getCategoryName(category, value)
 		end
 	end
 	return tostring(value or category)
+end
+
+local function setItemRarityFrame(widget, itemOrId)
+	if ItemsDatabase and ItemsDatabase.setRarityItem then
+		ItemsDatabase.setRarityItem(widget, itemOrId)
+	end
+end
+
+local function getItemDescriptionDetails(item)
+	if item and item.getId and ItemsDatabase and ItemsDatabase.getServerItemDetails then
+		local details = ItemsDatabase.getServerItemDetails(item:getId())
+		if details and type(details.descriptions) == 'table' and #details.descriptions > 0 then
+			return details.descriptions
+		end
+	end
+
+	local description = item and item:getDescription() or ""
+	local name = item and item:getName() or ""
+	if name == "" and item and item.getId and getItemServerName then
+		name = getItemServerName(item:getId())
+	end
+
+	return {
+		{ detail = "Description", description = description ~= "" and description or name }
+	}
+end
+
+function CyclopediaItems.requestServerItemData(itemId)
+	itemId = tonumber(itemId)
+	if not itemId or itemId <= 0 then
+		return
+	end
+	if ItemsDatabase and ItemsDatabase.hasServerItemDetails and ItemsDatabase.hasServerItemDetails(itemId) then
+		return
+	end
+	if pendingItemDetails[itemId] then
+		return
+	end
+
+	local protocolGame = g_game.getProtocolGame()
+	if not protocolGame then
+		return
+	end
+
+	local msg = OutputMessage.create()
+	msg:addU8(OPCODE_ITEM_DETAILS)
+	msg:addU16(itemId)
+	protocolGame:send(msg)
+	pendingItemDetails[itemId] = true
+	scheduleEvent(function() pendingItemDetails[itemId] = nil end, 2000)
+end
+
+function CyclopediaItems.showSelectedItemDetails(item)
+	if not item then
+		return
+	end
+
+	CyclopediaItems.showItemDescription(getItemDescriptionDetails(item))
+	CyclopediaItems.showNpcData(item)
+	CyclopediaItems.showItemPrice(item)
+end
+
+function CyclopediaItems.onItemDetails(itemId)
+	itemId = tonumber(itemId)
+	if not itemId then
+		return
+	end
+
+	pendingItemDetails[itemId] = nil
+	if not VisibleCyclopediaPanel or not lastSelectedItem or not lastSelectedItem.item or lastSelectedItem.item:getItemId() ~= itemId then
+		return
+	end
+
+	CyclopediaItems.showSelectedItemDetails(lastSelectedItem.item:getItem())
 end
 
 function CyclopediaItems.terminate()
@@ -297,6 +373,7 @@ function CyclopediaItems.categoryListChildFocus(self, selected)
 
 		local widget = g_ui.createWidget('ItemListLabel', VisibleCyclopediaPanel.leftInfo.itemList)
 		widget.item:setItemId(itemInfo.thingType:getId())
+		setItemRarityFrame(widget.item, itemInfo.thingType:getId())
     	if #itemInfo.marketData.name >= 20 then
       		widget.name:setTextWrap(true)
     	end
@@ -330,12 +407,7 @@ function CyclopediaItems.itemListChildFocus(self, selected)
 
   local item = selected.item:getItem()
   VisibleCyclopediaPanel.leftInfo.imageWidget.itemImage:setItemId(selected.item:getItemId())
-  if item then
-    local description = item:getDescription() or ""
-    CyclopediaItems.showItemDescription({
-      { detail = "Description", description = description ~= "" and description or item:getName() or "" }
-    })
-  end
+  setItemRarityFrame(VisibleCyclopediaPanel.leftInfo.imageWidget.itemImage, selected.item:getItemId())
   g_game.sendInspectionObject(3, selected.item:getItemId(), 0)
 
   VisibleCyclopediaPanel.panelitemshide:setVisible(true)
@@ -355,8 +427,8 @@ function CyclopediaItems.itemListChildFocus(self, selected)
   oldBuyChild = nil
   oldSaleChild = nil
 
-  CyclopediaItems.showNpcData(selected.item:getItem())
-  CyclopediaItems.showItemPrice(selected.item:getItem())
+  CyclopediaItems.showSelectedItemDetails(selected.item:getItem())
+  CyclopediaItems.requestServerItemData(selected.item:getItemId())
 
   local isMarketPrice = false
   local primaryLootValueSources = itemsData["primaryLootValueSources"] or {}
@@ -645,6 +717,7 @@ function CyclopediaItems.showSearchResult(list)
 
 		local widget = g_ui.createWidget('ItemListLabel', VisibleCyclopediaPanel.leftInfo.itemList)
 		widget.item:setItemId(data.thingType:getId())
+		setItemRarityFrame(widget.item, data.thingType:getId())
 		widget.name:setText(data.marketData.name)
 		if modules.game_analyser.isInDropTracker(data.thingType:getId()) then
 			widget.name:setColor("#FF9854")
@@ -757,6 +830,7 @@ function CyclopediaItems.onSortFields(widget, checked)
 
 		local widget = g_ui.createWidget('ItemListLabel', VisibleCyclopediaPanel.leftInfo.itemList)
 		widget.item:setItemId(itemInfo.thingType:getId())
+		setItemRarityFrame(widget.item, itemInfo.thingType:getId())
 		widget.name:setText(itemInfo.marketData.name)
 		if modules.game_analyser.isInDropTracker(itemInfo.thingType:getId()) then
 			widget.name:setColor("#FF9854")
@@ -924,6 +998,7 @@ function CyclopediaItems.onRedirect(itemId)
 			if itemInfo.thingType:getId() == itemId then
 				local widget = g_ui.createWidget('ItemListLabel', VisibleCyclopediaPanel.leftInfo.itemList)
 				widget.item:setItemId(itemInfo.thingType:getId())
+				setItemRarityFrame(widget.item, itemInfo.thingType:getId())
 				widget.name:setText(itemInfo.marketData.name)
 				if modules.game_analyser.isInDropTracker(itemInfo.thingType:getId()) then
 					widget.name:setColor("#FF9854")

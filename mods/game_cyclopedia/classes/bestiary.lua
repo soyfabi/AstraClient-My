@@ -13,6 +13,12 @@ local BestiaryMonster
 local MonsterId = 0
 local CurrentLevel = 0
 
+local function setItemRarityFrame(widget, itemOrId)
+  if ItemsDatabase and ItemsDatabase.setRarityItem then
+    ItemsDatabase.setRarityItem(widget, itemOrId)
+  end
+end
+
 function Bestiary.reset()
   overviewPage = 1
   monsterListPage = 1
@@ -383,6 +389,7 @@ function Cyclopedia.bestiaryMonsterData(monsterId, bestiaryMonster, currentLevel
         if it.item > 0 then
           item.image:setImageClip("0 34 34 34")
           item.item:setItemId(it.item)
+          setItemRarityFrame(item.item, it.item)
           item.item:setVirtualCount(it.stackable and "1+" or "1")
           item.item:setTooltip(it.name)
           item.item.onClick = function() modules.game_cyclopedia.cyclopediaWindow:hide() modules.game_cyclopedia.CyclopediaItems.onRedirect(it.item) end
@@ -418,6 +425,7 @@ function Cyclopedia.bestiaryMonsterData(monsterId, bestiaryMonster, currentLevel
         if it.item > 0 then
           item.image:setImageClip("0 34 34 34")
           item.item:setItemId(it.item)
+          setItemRarityFrame(item.item, it.item)
           item.item:setVirtualCount(it.stackable and "1+" or "1")
           item.item:setTooltip(it.name)
           item.item.onClick = function() modules.game_cyclopedia.cyclopediaWindow:hide() modules.game_cyclopedia.CyclopediaItems.onRedirect(it.item) end
@@ -453,6 +461,7 @@ function Cyclopedia.bestiaryMonsterData(monsterId, bestiaryMonster, currentLevel
         if it.item > 0 then
           item.image:setImageClip("0 34 34 34")
           item.item:setItemId(it.item)
+          setItemRarityFrame(item.item, it.item)
           item.item:setVirtualCount(it.stackable and "1+" or "1")
           item.item:setTooltip(it.name)
           item.item.onClick = function() modules.game_cyclopedia.cyclopediaWindow:hide() modules.game_cyclopedia.CyclopediaItems.onRedirect(it.item) end
@@ -488,6 +497,7 @@ function Cyclopedia.bestiaryMonsterData(monsterId, bestiaryMonster, currentLevel
         if it.item > 0 then
           item.image:setImageClip("0 34 34 34")
           item.item:setItemId(it.item)
+          setItemRarityFrame(item.item, it.item)
           item.item:setVirtualCount(it.stackable and "1+" or "1")
           item.item:setTooltip(it.name)
           item.item.onClick = function() modules.game_cyclopedia.cyclopediaWindow:hide() modules.game_cyclopedia.CyclopediaItems.onRedirect(it.item) end
@@ -523,6 +533,7 @@ function Cyclopedia.bestiaryMonsterData(monsterId, bestiaryMonster, currentLevel
         if it.item > 0 then
           item.image:setImageClip("0 34 34 34")
           item.item:setItemId(it.item)
+          setItemRarityFrame(item.item, it.item)
           item.item:setVirtualCount(it.stackable and "1+" or "1")
           item.item:setTooltip(it.name)
           item.item.onClick = function() modules.game_cyclopedia.cyclopediaWindow:hide() modules.game_cyclopedia.CyclopediaItems.onRedirect(it.item) end

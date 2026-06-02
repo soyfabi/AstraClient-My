@@ -6,12 +6,142 @@ function Item:inCorpse()
 	return self.isInCorpse
 end
 
-Item.getAverageMarketValue = Item.getAverageMarketValue or function(self)
+if not Item._serverDetailsWrapped then
+    Item._nativeGetDescription = Item.getDescription
+    Item._nativeGetNPCSaleData = Item.getNPCSaleData
+    Item._nativeGetAverageMarketValue = Item.getAverageMarketValue
+    Item._nativeGetDefaultValue = Item.getDefaultValue
+    Item._nativeGetDefaultBuyPrice = Item.getDefaultBuyPrice
+    Item._serverDetailsWrapped = true
+end
+
+local function getServerItemDetails(item)
+    if not item or not item.getId or not ItemsDatabase or not ItemsDatabase.getServerItemDetails then
+        return nil
+    end
+
+    local ok, itemId = pcall(function()
+        return item:getId()
+    end)
+    if not ok then
+        return nil
+    end
+
+    return ItemsDatabase.getServerItemDetails(itemId)
+end
+
+local function getNpcPrices(item)
+    if not item or not item.getNPCSaleData then
+        return 0, 0
+    end
+
+    local ok, npcData = pcall(function()
+        return item:getNPCSaleData()
+    end)
+
+    if not ok or type(npcData) ~= 'table' then
+        return 0, 0
+    end
+
+    local bestBuyPrice = 0
+    local bestSellPrice = 0
+    for _, offer in pairs(npcData) do
+        if type(offer) == 'table' then
+            local buyPrice = tonumber(offer.buyPrice or offer.buy or offer.itemBuyPrice) or 0
+            local sellPrice = tonumber(offer.salePrice or offer.sellPrice or offer.sell or offer.itemSellPrice) or 0
+            bestBuyPrice = math.max(bestBuyPrice, buyPrice)
+            bestSellPrice = math.max(bestSellPrice, sellPrice)
+        end
+    end
+
+    return bestSellPrice, bestBuyPrice
+end
+
+function Item:getDescription(...)
+    local details = getServerItemDetails(self)
+    if details then
+        if details.description and details.description ~= "" then
+            return details.description
+        end
+        if type(details.descriptions) == 'table' and details.descriptions[1] then
+            return details.descriptions[1].description or ""
+        end
+    end
+
+    if Item._nativeGetDescription then
+        local ok, value = pcall(Item._nativeGetDescription, self, ...)
+        if ok then
+            return value or ""
+        end
+    end
+    return ""
+end
+
+function Item:getNPCSaleData()
+    local details = getServerItemDetails(self)
+    if details and type(details.npcSaleData) == 'table' and #details.npcSaleData > 0 then
+        return details.npcSaleData
+    end
+
+    if Item._nativeGetNPCSaleData then
+        local ok, data = pcall(Item._nativeGetNPCSaleData, self)
+        if ok and type(data) == 'table' then
+            return data
+        end
+    end
+    return {}
+end
+
+function Item:getAverageMarketValue()
+    local details = getServerItemDetails(self)
+    local value = details and tonumber(details.averageMarketValue) or 0
+    if value and value > 0 then
+        return value
+    end
+
+    if Item._nativeGetAverageMarketValue then
+        local ok, nativeValue = pcall(Item._nativeGetAverageMarketValue, self)
+        if ok then
+            return tonumber(nativeValue) or 0
+        end
+    end
     return 0
 end
 
-Item.getDefaultValue = Item.getDefaultValue or function(self)
-    return 0
+function Item:getDefaultValue()
+    local details = getServerItemDetails(self)
+    local value = details and tonumber(details.defaultValue) or 0
+    if value and value > 0 then
+        return value
+    end
+
+    if Item._nativeGetDefaultValue then
+        local ok, nativeValue = pcall(Item._nativeGetDefaultValue, self)
+        if ok and tonumber(nativeValue) and tonumber(nativeValue) > 0 then
+            return tonumber(nativeValue)
+        end
+    end
+
+    local sellPrice, buyPrice = getNpcPrices(self)
+    return sellPrice > 0 and sellPrice or buyPrice
+end
+
+function Item:getDefaultBuyPrice()
+    local details = getServerItemDetails(self)
+    local value = details and tonumber(details.defaultBuyPrice) or 0
+    if value and value > 0 then
+        return value
+    end
+
+    if Item._nativeGetDefaultBuyPrice then
+        local ok, nativeValue = pcall(Item._nativeGetDefaultBuyPrice, self)
+        if ok and tonumber(nativeValue) and tonumber(nativeValue) > 0 then
+            return tonumber(nativeValue)
+        end
+    end
+
+    local _, buyPrice = getNpcPrices(self)
+    return buyPrice
 end
 
 Item.getPriceValue = Item.getPriceValue or function(self)
@@ -117,6 +247,10 @@ function isCorpse(itemId)
 end
 
 function getItemColor(itemId)
+    if ItemsDatabase and ItemsDatabase.getItemColor then
+        return ItemsDatabase.getItemColor(itemId)
+    end
+
     local item = Item.create(itemId, 1)
     if not item then
         return "#F0F0F0"

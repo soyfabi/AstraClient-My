@@ -39,11 +39,15 @@ function displayMessage(mode, text)
 
   if msgtype.screenTarget and m_settings.getOption("showMessages") then
     local label = messagesPanel:recursiveGetChildById(msgtype.screenTarget)
-    if not msgtype.colored then
+    local hasColorLoot = type(text) == 'string' and ItemsDatabase and ItemsDatabase.hasColorLootMarkup and ItemsDatabase.hasColorLootMarkup(text)
+    if hasColorLoot and ItemsDatabase.setColorLootMessage then
+      local text2 = ItemsDatabase.setColorLootMessage(text, msgtype.color)
+      label:setColoredText(text2)
+    elseif not msgtype.colored then
       local tt = string.format("[color=%s]%s[/color]", msgtype.color, text)
       label:setColorText(tt)
     else
-      local text2 = text:tocolored()
+      local text2 = text:tocolored(msgtype.color)
       label:setColoredText(text2)
     end
     label:setVisible(true)
@@ -85,4 +89,3 @@ end
 function LocalPlayer:onAutoWalkFail(player)
   modules.game_textmessage.displayFailureMessage(tr('There is no way.'))
 end
-

@@ -137,6 +137,10 @@ function string:parseHTML()
 end
 
 function string:tocolored(defaltColor)
+    if ItemsDatabase and ItemsDatabase.setColorLootMessage then
+        return ItemsDatabase.setColorLootMessage(self, defaltColor)
+    end
+
     local result = {}
     local pattern = "()({.-|.-})()"
     local lastEnd = 1

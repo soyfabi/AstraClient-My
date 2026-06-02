@@ -521,6 +521,9 @@ end
 function refreshItem(item)
   priceLabel:setText(formatCurrency(getItemPrice(item)))
   itemButton:setItem(item.ptr)
+  if ItemsDatabase and ItemsDatabase.setRarityItem then
+    ItemsDatabase.setRarityItem(itemButton, item.ptr)
+  end
   itemButton.onMouseRelease = itemPopup
 
   if getCurrentTradeType() == BUY then
@@ -591,6 +594,9 @@ function refreshTradeItems()
 
     local itemWidget = itemBox:getChildById('item')
     itemWidget:setItem(item.ptr)
+    if ItemsDatabase and ItemsDatabase.setRarityItem then
+      ItemsDatabase.setRarityItem(itemWidget, item.ptr)
+    end
     ItemsDatabase.setTier(itemWidget, item.ptr)
     itemBox.onMouseRelease = itemPopup
 
@@ -1001,6 +1007,9 @@ local function updateBlacklist(window)
     widget:setId(itemId)
     widget.itemName:setText(getItemServerName(itemId))
     widget.itemId:setItemId(itemId)
+    if ItemsDatabase and ItemsDatabase.setRarityItem then
+      ItemsDatabase.setRarityItem(widget.itemId, itemId)
+    end
     widget:setBackgroundColor(color)
     widget:getChildById('buttonItemClear').onClick = function()
       removeItemInList(itemId)
@@ -1078,6 +1087,9 @@ function onTradeAllClick()
 
     local itemWidget = itemSquare:getChildById('item')
     itemWidget:setItem(item.ptr)
+    if ItemsDatabase and ItemsDatabase.setRarityItem then
+      ItemsDatabase.setRarityItem(itemWidget, item.ptr)
+    end
 
     radio:addWidget(itemSquare)
     ::continue::
