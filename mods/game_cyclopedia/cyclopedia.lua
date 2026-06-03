@@ -123,6 +123,10 @@ function init()
       onOptionChange(widget)
     end
   end
+
+  if g_game.isOnline() then
+    Cyclopedia.startGame()
+  end
 end
 
 function terminate()

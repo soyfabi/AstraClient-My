@@ -36,7 +36,7 @@ if not WeaponProficiency then
 
     WeaponProficiency.filters = {
         ["levelButton"] = false,
-        ["vocButton"] = false,
+        ["vocButton"] = true,
         ["oneButton"] = false,
         ["twoButton"] = false
     }
@@ -71,7 +71,7 @@ WeaponProficiency.perkPanelsName = WeaponProficiency.perkPanelsName or
                                        {"oneBonusIconPanel", "twoBonusIconPanel", "threeBonusIconPanel"}
 WeaponProficiency.filters = WeaponProficiency.filters or {}
 WeaponProficiency.filters["levelButton"] = WeaponProficiency.filters["levelButton"] or false
-WeaponProficiency.filters["vocButton"] = WeaponProficiency.filters["vocButton"] or false
+WeaponProficiency.filters["vocButton"] = WeaponProficiency.filters["vocButton"] ~= false
 WeaponProficiency.filters["oneButton"] = WeaponProficiency.filters["oneButton"] or false
 WeaponProficiency.filters["twoButton"] = WeaponProficiency.filters["twoButton"] or false
 WeaponProficiency.listPool = WeaponProficiency.listPool or {}
@@ -98,7 +98,30 @@ end
 
 local function getLeftSlotItem()
     local player = g_game.getLocalPlayer()
-    return player and player:getInventoryItem(InventorySlotLeft) or nil
+    if not player then
+        return nil
+    end
+
+    local slotLeft = InventorySlotLeft or 6
+    local slotRight = InventorySlotRight or 5
+
+    local leftItem = player:getInventoryItem(slotLeft)
+    if leftItem then
+        local weaponType = getNumericCall(leftItem, "getWeaponType")
+        if weaponType > 0 then
+            return leftItem
+        end
+    end
+
+    local rightItem = player:getInventoryItem(slotRight)
+    if rightItem then
+        local weaponType = getNumericCall(rightItem, "getWeaponType")
+        if weaponType > 0 then
+            return rightItem
+        end
+    end
+
+    return leftItem or rightItem
 end
 
 local function hasWeaponProficiencyProtocol()
@@ -222,6 +245,18 @@ local function getVocationWarningDecision(marketData, thingType)
         levelMatch = levelMatch,
         showWarning = showWarning
     }
+end
+
+local function updateFilterButtons()
+    if not WeaponProficiency.window then
+        return
+    end
+    for _, btnName in ipairs({"levelButton", "vocButton", "oneButton", "twoButton"}) do
+        local btn = WeaponProficiency.window:recursiveGetChildById(btnName)
+        if btn then
+            btn:setOn(WeaponProficiency.filters[btnName] == true)
+        end
+    end
 end
 
 function init()
@@ -385,7 +420,7 @@ function initTopBarProficiency(attempts)
                 -- Request proficiency data for equipped weapon
                 local player = g_game.getLocalPlayer()
                 if player then
-                    local leftSlotItem = player:getInventoryItem(InventorySlotLeft)
+                    local leftSlotItem = getLeftSlotItem()
                     if leftSlotItem then
                         local itemId = leftSlotItem:getId()
                         sendWeaponProficiencyAction(0, itemId)
@@ -425,7 +460,7 @@ function updateTopBarProficiency()
         return
     end
 
-    local leftSlotItem = player:getInventoryItem(InventorySlotLeft)
+    local leftSlotItem = getLeftSlotItem()
     if not leftSlotItem then
         -- No weapon equipped - show 0%
         local progressBar = profWidget:getChildById('proficiencyProgress')
@@ -683,6 +718,7 @@ function show()
 
     -- Reset filter buttons visual state (but keep filter state)
     -- The filters persist across open/close
+    updateFilterButtons()
 
     WeaponProficiency.window:show()
     WeaponProficiency.window:raise()
@@ -734,7 +770,7 @@ function autoSelectItem()
     -- First, check if player has an equipped weapon
     local player = g_game.getLocalPlayer()
     if player then
-        local leftSlotItem = player:getInventoryItem(InventorySlotLeft)
+        local leftSlotItem = getLeftSlotItem()
         if leftSlotItem then
             local equippedId = leftSlotItem:getId()
             -- Search for this item in our list
@@ -1012,6 +1048,9 @@ function createWindow()
             end
         end
     end
+
+    -- Sync filter buttons visual state
+    updateFilterButtons()
 
     -- Initialize item list
     WeaponProficiency:refreshItemList()
@@ -1741,7 +1780,7 @@ function WeaponProficiency:displayPerks(itemId, perks, displayItem)
     self:updateItemAddons(experience, displayItem, masteryAchieved, thingType, marketData)
 end
 
--- Update a single star widget - matching RTC implementation
+-- Update a single star widget - matching ATC implementation
 function WeaponProficiency:updateStarWidget(starWidget, levelIndex, currentLevel, experience, displayItem,
     masteryAchieved, thingType, marketData)
     if not starWidget then

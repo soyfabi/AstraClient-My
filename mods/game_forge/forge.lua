@@ -427,7 +427,7 @@ function loadMenu(menuId)
   g_game.requestResource(ResourceForgeDust)
   g_game.requestResource(ResourceForgeSlivers)
   g_game.requestResource(ResourceForgeExaltedCore)
-  g_game.doThing(false)
+  g_game.doThing(true)
 
   local fusionMenuButton = forgeWindow.panelButtons:getChildById('fusionButton')
   local transferMenuButton = forgeWindow.panelButtons:getChildById('transferButton')

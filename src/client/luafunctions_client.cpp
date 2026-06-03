@@ -301,6 +301,7 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "canPerformGameAction", &Game::canPerformGameAction, &g_game);
     g_lua.bindSingletonFunction("g_game", "canReportBugs", &Game::canReportBugs, &g_game);
     g_lua.bindSingletonFunction("g_game", "checkBotProtection", &Game::checkBotProtection, &g_game);
+    g_lua.bindSingletonFunction("g_game", "doThing", &Game::doThing, &g_game);
     g_lua.bindSingletonFunction("g_game", "isOnline", &Game::isOnline, &g_game);
     g_lua.bindSingletonFunction("g_game", "isLogging", &Game::isLogging, &g_game);
     g_lua.bindSingletonFunction("g_game", "isDead", &Game::isDead, &g_game);
@@ -354,6 +355,15 @@ void Client::registerLuaFunctions()
     g_lua.bindSingletonFunction("g_game", "sendGemAtelierAction", &Game::gemAction, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendWeaponProficiencyAction", &Game::sendWeaponProficiencyAction, &g_game);
     g_lua.bindSingletonFunction("g_game", "sendWeaponProficiencyApply", &Game::sendWeaponProficiencyApply, &g_game);
+    g_lua.bindSingletonFunction("g_game", "sendQuickLoot", &Game::sendQuickLoot, &g_game);
+    g_lua.bindSingletonFunction("g_game", "quickLoot", &Game::quickLoot, &g_game);
+    g_lua.bindSingletonFunction("g_game", "quickLootArea", &Game::quickLootArea, &g_game);
+    g_lua.bindSingletonFunction("g_game", "requestQuickLootBlackWhiteList", &Game::requestQuickLootBlackWhiteList, &g_game);
+    g_lua.bindSingletonFunction("g_game", "updateLootWhiteList", &Game::updateLootWhiteList, &g_game);
+    g_lua.bindSingletonFunction("g_game", "openContainerQuickLoot", &Game::openContainerQuickLoot, &g_game);
+    g_lua.bindSingletonFunction("g_game", "updateLootContainer", &Game::updateLootContainer, &g_game);
+    g_lua.bindSingletonFunction("g_game", "removeLootContainer", &Game::removeLootContainer, &g_game);
+    g_lua.bindSingletonFunction("g_game", "removeObtainContainer", &Game::removeObtainContainer, &g_game);
     g_lua.bindSingletonFunction("g_game", "applyImbuement", &Game::applyImbuement, &g_game);
     g_lua.bindSingletonFunction("g_game", "clearImbuement", &Game::clearImbuement, &g_game);
     g_lua.bindSingletonFunction("g_game", "closeImbuingWindow", &Game::closeImbuingWindow, &g_game);

@@ -491,7 +491,9 @@ const ThingTypePtr& ThingTypeManager::getThingType(uint16 id, ThingCategory cate
 const ItemTypePtr& ThingTypeManager::getItemType(uint16 id)
 {
     if(id >= m_itemTypes.size() || m_itemTypes[id] == m_nullItemType) {
-        g_logger.error(stdext::format("invalid thing type, server id: %d", id));
+        if(id != 0) {
+            g_logger.error(stdext::format("invalid thing type, server id: %d", id));
+        }
         return m_nullItemType;
     }
     return m_itemTypes[id];

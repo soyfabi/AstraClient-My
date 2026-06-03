@@ -2083,7 +2083,7 @@ function toggleMagicShooter(widget, message)
   end
 
   helperConfig.magicShooterEnabled = widget:isChecked()
-  modules.game_textmessage.displayGameMessage(message and message or string.format("RTCaster is %s.", (helperConfig.magicShooterEnabled and "enabled" or "disabled")))
+  modules.game_textmessage.displayGameMessage(message and message or string.format("ATCaster is %s.", (helperConfig.magicShooterEnabled and "enabled" or "disabled")))
   shooterTracker:setText(helperConfig.magicShooterEnabled and "Active" or "Inactive")
   shooterTracker:setColor(helperConfig.magicShooterEnabled and "$var-text-cip-color-green" or "$var-text-cip-store-red")
 end
@@ -2142,7 +2142,7 @@ function toggleShooterPreset(widget, hideMessage)
     loadShooterProfileByName(option)
   end
   if not hideMessage then
-    modules.game_textmessage.displayGameMessage(string.format("RTCaster profile switched to %s.", option))
+    modules.game_textmessage.displayGameMessage(string.format("ATCaster profile switched to %s.", option))
   end
 end
 
@@ -2375,7 +2375,7 @@ function checkMagicShooter()
     local caster = enableButtons:recursiveGetChildById("enableMagicShooter")
     if caster then
       caster:setChecked(false)
-      toggleMagicShooter(caster, "Entering in a Protection Zone!\nRTCaster disabled.")
+      toggleMagicShooter(caster, "Entering in a Protection Zone!\nATCaster disabled.")
       return
     end
   end
@@ -2385,7 +2385,7 @@ function checkMagicShooter()
     local widget = enableButtons:recursiveGetChildById("enableMagicShooter")
     if widget then
       widget:setChecked(false)
-      toggleMagicShooter(widget, "RTCaster disabled! \nDue to no changes in your actions so far.")
+      toggleMagicShooter(widget, "ATCaster disabled! \nDue to no changes in your actions so far.")
       return
     end
     return
@@ -2396,7 +2396,7 @@ function checkMagicShooter()
     local widget = enableButtons:recursiveGetChildById("enableMagicShooter")
     if widget then
       widget:setChecked(false)
-      toggleMagicShooter(widget, "Follow detected!\nRTCaster disabled.")
+      toggleMagicShooter(widget, "Follow detected!\nATCaster disabled.")
       return
     end
   end
@@ -3555,7 +3555,7 @@ function botStatus()
           toggleMagicShooter(widget)
         end
       end
-      shooterStatusWidget:setTooltip("Click to toggle RTCaster")
+      shooterStatusWidget:setTooltip("Click to toggle ATCaster")
     end
 
     local targetStatusWidget = helperTracker:recursiveGetChildById("targetStatus")
@@ -3921,7 +3921,7 @@ function createHelperRules()
                       " These Terms of Service establish the conditions under which D FATO GAMES LTDA provides 'Helper' and 'Additional Services' for the online RPG game 'Astra.' This document complements the 'Astra Service Agreement,' which all users must accept when creating an account.\n\n" ..
 
                       "2 - Cheating\n\n" ..
-                      "2.H - Automations in RTC.\n If the player is using the RTC client and the RTCaster function to attack monsters and/or cast spells is active, they will undergo a standard check by our team. If the player absence is confirmed, a ban will be applied to the player and their account."
+                      "2.H - Automations in ATC.\n If the player is using the ATC client and the ATCaster function to attack monsters and/or cast spells is active, they will undergo a standard check by our team. If the player absence is confirmed, a ban will be applied to the player and their account."
 
     local label = g_ui.createWidget('UILabel', rulesTextList)
     label:setText(longText)

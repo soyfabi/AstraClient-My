@@ -140,6 +140,9 @@ public:
     void sendWheelGemAction(uint8_t actionType, uint8_t param, uint8_t pos);
     void sendWeaponProficiencyAction(uint8_t actionType, uint16_t itemId = 0);
     void sendWeaponProficiencyApply(uint16_t itemId, const std::vector<uint8_t>& levels, const std::vector<uint8_t>& perkPositions);
+    void sendQuickLoot(uint8_t variant, const Position& pos, uint16_t itemId, uint8_t stackpos);
+    void requestQuickLootBlackWhiteList(uint8_t filter, uint16_t size, const std::vector<uint16_t>& listedItems);
+    void openContainerQuickLoot(uint8_t action, uint8_t category, const Position& pos, uint16_t itemId, uint8_t stackpos, bool useMainAsFallback);
 
     // otclient only
     void sendChangeMapAwareRange(int xrange, int yrange);

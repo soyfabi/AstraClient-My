@@ -3322,12 +3322,28 @@ Imbuement ProtocolGame::getImbuementInfo(const InputMessagePtr& msg)
 
 void ProtocolGame::parseLootContainers(const InputMessagePtr& msg)
 {
-    msg->getU8(); // quickLootFallbackToMainContainer ? 1 : 0
-    int containers = msg->getU8();
-    for (int i = 0; i < containers; ++i) {
-        msg->getU8(); // id?
-        msg->getU16();
+    const bool quickLootFallbackToMainContainer = msg->getU8() != 0;
+    const uint8_t containersCount = msg->getU8();
+    std::map<uint8_t, uint16_t> lootContainers;
+    std::map<uint8_t, uint16_t> obtainContainers;
+    std::vector<std::tuple<uint8_t, uint16_t, uint16_t>> lootList;
+
+    for (uint8_t i = 0; i < containersCount; ++i) {
+        const uint8_t category = msg->getU8();
+        const uint16_t lootContainerId = msg->getU16();
+        uint16_t obtainContainerId = 0;
+        const int oldFormatRemaining = (containersCount - i - 1) * 3;
+        if (msg->getUnreadSize() >= oldFormatRemaining + 2) {
+            obtainContainerId = msg->getU16();
+        }
+
+        lootContainers[category] = lootContainerId;
+        obtainContainers[category] = obtainContainerId;
+        lootList.emplace_back(category, lootContainerId, obtainContainerId);
     }
+
+    g_lua.callGlobalField("g_game", "onParseLootContainers", quickLootFallbackToMainContainer ? 1 : 0, lootContainers, obtainContainers);
+    g_lua.callGlobalField("g_game", "onQuickLootContainers", quickLootFallbackToMainContainer, lootList);
 }
 
 void ProtocolGame::parseSupplyStash(const InputMessagePtr& msg)

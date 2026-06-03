@@ -364,12 +364,12 @@ function ProficiencyData:getContentById(id)
 end
 
 -- Get proficiency ID based on market category
--- Market categories from RTC: Axes=17, Clubs=18, Distance=19, Swords=20, Wands=21, Fist=27
+-- Market categories from ATC: Axes=17, Clubs=18, Distance=19, Swords=20, Wands=21, Fist=27
 -- Proficiency IDs from JSON (verified):
 --   6=Sanguine 1H Sword, 8=Sanguine 1H Axe, 9=Sanguine 1H Club, 10=Sanguine 2H Sword
 --   11=Sanguine 2H Axe, 12=Sanguine 2H Club, 13=Sanguine 2H Bow, 14=Sanguine 2H Fist, 15=Sanguine 1H Wand
 function ProficiencyData:getProficiencyIdFromCategory(marketCategory, itemName)
-    -- MarketCategory enum values from RTC -> Correct Proficiency IDs
+    -- MarketCategory enum values from ATC -> Correct Proficiency IDs
     local categoryMap = {
         [17] = 8, -- MarketCategory.Axes -> Proficiency 8 (Axe)
         [18] = 9, -- MarketCategory.Clubs -> Proficiency 9 (Club)

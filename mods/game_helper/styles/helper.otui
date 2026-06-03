@@ -2469,7 +2469,7 @@ ShooterPanel < Panel
       margin-left: 10
       margin-top: 1
       image-source: /images/skin/show-gui-help-grey
-      !tooltip: tr('Choose a hotkey to toggle RTCaster on/off.')
+      !tooltip: tr('Choose a hotkey to toggle ATCaster on/off.')
     Button
       id: setKeyDisableButton
       height: 15
@@ -2490,7 +2490,7 @@ ShooterPanel < Panel
       margin-left: 10
       margin-top: 1
       image-source: /images/skin/show-gui-help-grey
-      !tooltip: tr('Choose a hotkey to toggle RTCaster and Target on/off.')
+      !tooltip: tr('Choose a hotkey to toggle ATCaster and Target on/off.')
       
 NewHeadlessWindow
   id: helperWindow

@@ -885,7 +885,7 @@ return {
 		value = -1,
         apply = function(value)
             if getOption("engine") ~= -1 and value ~= getOption("engine") then
-              displayInfoBox("Info", "You have selected a different graphics engine. Restart RTC for this change to take effect.")
+              displayInfoBox("Info", "You have selected a different graphics engine. Restart ATC for this change to take effect.")
             end
             return true
         end,

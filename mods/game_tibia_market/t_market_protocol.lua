@@ -20,6 +20,22 @@ local MARKET_REQUEST_MY_HISTORY = 0xFFFF
 local registered = false
 local enterItems = {}
 local lastBrowseTier = 0
+local marketOpen = false
+
+local function logMarketProtocolError(message)
+  if g_logger and g_logger.error then
+    g_logger.error('[MarketProtocol] ' .. message)
+  elseif perror then
+    perror('[MarketProtocol] ' .. message)
+  end
+end
+
+local function skipUnread(msg)
+  local unread = msg:getUnreadSize()
+  if unread and unread > 0 then
+    msg:skipBytes(unread)
+  end
+end
 
 local function getDepotItemKey(itemId, tier)
   return string.format("%d:%d", itemId or 0, tier or 0)
@@ -30,6 +46,7 @@ local function getProtocolGame()
 end
 
 local function sendMessage(msg)
+  MarketProtocol.register()
   local protocolGame = getProtocolGame()
   if protocolGame then
     protocolGame:send(msg)
@@ -161,30 +178,42 @@ local function parseMarketDetail(msg)
 end
 
 local function parseMarketMessage(protocolGame, msg)
-  local response = msg:getU8()
-  if response == RESP_MESSAGE then
-    local message = msg:getString()
-    if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
-      modules.game_textmessage.displayFailureMessage(message)
+  local ok, err = pcall(function()
+    local response = msg:getU8()
+    if response == RESP_MESSAGE then
+      marketOpen = false
+      local message = msg:getString()
+      if modules.game_textmessage and modules.game_textmessage.displayFailureMessage then
+        modules.game_textmessage.displayFailureMessage(message)
+      else
+        displayInfoBox(tr("Market"), message)
+      end
+    elseif response == RESP_ENTER then
+      parseMarketEnter(msg)
+    elseif response == RESP_LEAVE then
+      marketOpen = false
+      signalcall(g_game.onMarketLeave)
+    elseif response == RESP_BROWSE then
+      parseMarketBrowse(msg)
+    elseif response == RESP_DETAIL then
+      parseMarketDetail(msg)
     else
-      displayInfoBox(tr("Market"), message)
+      logMarketProtocolError('unknown response ' .. tostring(response))
+      marketOpen = false
+      skipUnread(msg)
     end
-  elseif response == RESP_ENTER then
-    parseMarketEnter(msg)
-  elseif response == RESP_LEAVE then
-    signalcall(g_game.onMarketLeave)
-  elseif response == RESP_BROWSE then
-    parseMarketBrowse(msg)
-  elseif response == RESP_DETAIL then
-    parseMarketDetail(msg)
+  end)
+
+  if not ok then
+    marketOpen = false
+    logMarketProtocolError(tostring(err))
+    skipUnread(msg)
   end
+
   return true
 end
 
 function MarketProtocol.register()
-  if registered then
-    return
-  end
   ProtocolGame.unregisterOpcode(OPCODE_MARKET_SEND)
   ProtocolGame.registerOpcode(OPCODE_MARKET_SEND, parseMarketMessage)
   registered = true
@@ -200,12 +229,17 @@ function MarketProtocol.unregister()
 end
 
 function MarketProtocol.open()
+  if marketOpen then
+    return
+  end
+  marketOpen = true
   local msg = OutputMessage.create()
   msg:addU8(OPCODE_MARKET_OPEN)
   sendMessage(msg)
 end
 
 function MarketProtocol.leave()
+  marketOpen = false
   local msg = OutputMessage.create()
   msg:addU8(OPCODE_MARKET_LEAVE)
   sendMessage(msg)
@@ -248,6 +282,10 @@ function MarketProtocol.cancelOffer(timestamp, counter)
   sendMessage(msg)
 end
 
+local function onGameEnd()
+  enterItems = {}
+end
+
 function MarketProtocol.acceptOffer(timestamp, counter, amount)
   local msg = OutputMessage.create()
   msg:addU8(OPCODE_MARKET_ACCEPT)
@@ -261,7 +299,7 @@ function initMarketProtocol()
 
   connect(g_game, {
     onGameStart = MarketProtocol.register,
-    onGameEnd = MarketProtocol.unregister
+    onGameEnd = onGameEnd
   })
 
   g_game.openMarket = MarketProtocol.open
@@ -276,7 +314,7 @@ end
 function terminateMarketProtocol()
   disconnect(g_game, {
     onGameStart = MarketProtocol.register,
-    onGameEnd = MarketProtocol.unregister
+    onGameEnd = onGameEnd
   })
   MarketProtocol.unregister()
 end

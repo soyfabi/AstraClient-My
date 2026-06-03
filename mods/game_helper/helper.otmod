@@ -1,6 +1,6 @@
 Module
   name: game_helper
-  description: RTC Helper
+  description: ATC Helper
   author: R!ck && ZLukSrT#8740 && Christianlb && worthdavi bjos
   sandboxed: true
   scripts: [ helper ]

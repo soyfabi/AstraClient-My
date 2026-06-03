@@ -11,7 +11,10 @@ local lastSelectedItem = nil
 local lastSelectedCategory = nil
 local oldBuyChild = nil
 local oldSaleChild = nil
-local itemsData = {}
+local itemsData = {
+	primaryLootValueSources = {},
+	customSalePrices = {}
+}
 local pendingItemDetails = {}
 local OPCODE_ITEM_DETAILS = 0xC7
 
@@ -874,6 +877,15 @@ function CyclopediaItems.onSourceValueChange(checked, npcSource)
 		return
 	end
 
+	if not itemsData then
+		itemsData = {
+			primaryLootValueSources = {},
+			customSalePrices = {}
+		}
+	end
+	itemsData["primaryLootValueSources"] = itemsData["primaryLootValueSources"] or {}
+	itemsData["customSalePrices"] = itemsData["customSalePrices"] or {}
+
 	local player = g_game.getLocalPlayer()
 	local item = lastSelectedItem.item:getItem()
 	local itemId = item:getId()
@@ -927,6 +939,15 @@ function CyclopediaItems.onChangeCustomPrice(widget)
 	if not lastSelectedItem then
 		return
 	end
+
+	if not itemsData then
+		itemsData = {
+			primaryLootValueSources = {},
+			customSalePrices = {}
+		}
+	end
+	itemsData["primaryLootValueSources"] = itemsData["primaryLootValueSources"] or {}
+	itemsData["customSalePrices"] = itemsData["customSalePrices"] or {}
 
 	local player = g_game.getLocalPlayer()
 	local currentText = widget:getText()
