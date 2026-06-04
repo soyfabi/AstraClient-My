@@ -3397,6 +3397,7 @@ void ProtocolGame::parseLootContainers(const InputMessagePtr& msg)
 {
     const bool quickLootFallbackToMainContainer = msg->getU8() != 0;
     const uint8_t containersCount = msg->getU8();
+    const bool inlineObtainContainers = g_game.getClientVersion() >= 1332 && !g_game.getFeature(Otc::GameQuickLootFlags);
     std::map<uint8_t, uint16_t> lootContainers;
     std::map<uint8_t, uint16_t> obtainContainers;
     std::vector<std::tuple<uint8_t, uint16_t, uint16_t>> lootList;
@@ -3405,14 +3406,34 @@ void ProtocolGame::parseLootContainers(const InputMessagePtr& msg)
         const uint8_t category = msg->getU8();
         const uint16_t lootContainerId = msg->getU16();
         uint16_t obtainContainerId = 0;
-        const int oldFormatRemaining = (containersCount - i - 1) * 3;
-        if (msg->getUnreadSize() >= oldFormatRemaining + 2) {
+
+        if (inlineObtainContainers && msg->getUnreadSize() >= 2) {
             obtainContainerId = msg->getU16();
         }
 
         lootContainers[category] = lootContainerId;
         obtainContainers[category] = obtainContainerId;
         lootList.emplace_back(category, lootContainerId, obtainContainerId);
+    }
+
+    // Astra/TFS 8.6 sends managed obtain containers as a second count/list.
+    if (!inlineObtainContainers && g_game.getFeature(Otc::GameQuickLootFlags) && msg->getUnreadSize() >= 1) {
+        const uint8_t obtainContainersCount = msg->getU8();
+        for (uint8_t i = 0; i < obtainContainersCount && msg->getUnreadSize() >= 3; ++i) {
+            const uint8_t category = msg->getU8();
+            const uint16_t obtainContainerId = msg->getU16();
+
+            obtainContainers[category] = obtainContainerId;
+            auto it = std::find_if(lootList.begin(), lootList.end(), [category](const auto& entry) {
+                return std::get<0>(entry) == category;
+            });
+
+            if (it != lootList.end()) {
+                std::get<2>(*it) = obtainContainerId;
+            } else {
+                lootList.emplace_back(category, 0, obtainContainerId);
+            }
+        }
     }
 
     g_lua.callGlobalField("g_game", "onParseLootContainers", quickLootFallbackToMainContainer ? 1 : 0, lootContainers, obtainContainers);

@@ -656,6 +656,17 @@ function registerProtocol()
 		msg:getU8() -- Category Id
 		msg:getU16() -- Client Id
 	end
+
+	if g_game.getFeature(GameQuickLootFlags) and msg:getUnreadSize() >= 1 then
+		local obtainSize = msg:getU8() -- Managed obtain container size
+		for i = 1, obtainSize do
+			if msg:getUnreadSize() < 3 then
+				break
+			end
+			msg:getU8() -- Category Id
+			msg:getU16() -- Client Id
+		end
+	end
   end)
 
   registerOpcode(ServerPackets.ClientCheck, function(protocol, msg)

@@ -1,11 +1,11 @@
 local CyclopediaProtocol = {}
 
-local OPCODE_INFO = 0x48
-local OPCODE_CATEGORY = 0x49
-local OPCODE_MONSTER = 0x4A
-local OPCODE_CHARM = 0x4C
-local OPCODE_TRACKER = 0x4D
-local OPCODE_SEND = 0x48
+local OPCODE_INFO = 0x39
+local OPCODE_CATEGORY = 0x3A
+local OPCODE_MONSTER = 0x3B
+local OPCODE_CHARM = 0x3E
+local OPCODE_TRACKER = 0x3F
+local OPCODE_SEND = 0x39
 
 local RESP_MESSAGE = 0
 local RESP_BESTIARY_DATA = 1
