@@ -949,16 +949,22 @@ function CyclopediaItems.onSourceValueChange(checked, npcSource)
 		currentPrice = CyclopediaItems.showItemPrice(item)
 		VisibleCyclopediaPanel.leftInfo.circlenpc:setChecked(true)
 		VisibleCyclopediaPanel.leftInfo.circlemarket:setChecked(false)
-		player:updateCyclopediaMarketList(itemId, true)
+		if player and player.updateCyclopediaMarketList then
+			player:updateCyclopediaMarketList(itemId, true)
+		end
 	else
 		itemsData["primaryLootValueSources"][currentItemID] = "market"
 		currentPrice = CyclopediaItems.showItemPrice(item)
 		VisibleCyclopediaPanel.leftInfo.circlenpc:setChecked(false)
 		VisibleCyclopediaPanel.leftInfo.circlemarket:setChecked(true)
-		player:updateCyclopediaMarketList(itemId, false)
+		if player and player.updateCyclopediaMarketList then
+			player:updateCyclopediaMarketList(itemId, false)
+		end
 	end
 
-	player:updateCyclopediaCustomPrice(itemId, currentPrice)
+	if player and player.updateCyclopediaCustomPrice then
+		player:updateCyclopediaCustomPrice(itemId, currentPrice)
+	end
 	modules.game_analyser.HuntingAnalyser:updateLootedItemValue(itemId, currentPrice)
 	modules.game_analyser.LootAnalyser:updateBasePriceFromLootedItems(itemId, currentPrice)
 	if modules.game_analyser.getLeaderLootType() == PriceTypeEnum.Leader and modules.game_analyser.isLeaderParty() then
@@ -1011,7 +1017,9 @@ function CyclopediaItems.onChangeCustomPrice(widget)
 		itemsData["customSalePrices"] = newItemList["customSalePrices"]
 		CyclopediaItems.showItemPrice(item)
 		local itemDefaultValue = item:getDefaultValue()
-		player:updateCyclopediaCustomPrice(itemId, itemDefaultValue)
+		if player and player.updateCyclopediaCustomPrice then
+			player:updateCyclopediaCustomPrice(itemId, itemDefaultValue)
+		end
 		modules.game_analyser.HuntingAnalyser:updateLootedItemValue(itemId, itemDefaultValue)
 		modules.game_analyser.LootAnalyser:updateBasePriceFromLootedItems(itemId, itemDefaultValue)
 		if modules.game_analyser.getLeaderLootType() == PriceTypeEnum.Leader and modules.game_analyser.isLeaderParty() then
@@ -1042,7 +1050,9 @@ function CyclopediaItems.onChangeCustomPrice(widget)
 
 	itemsData["customSalePrices"][itemIdStr] = numericValue
  	CyclopediaItems.onUpdateResultingValue(currentText)
-	player:updateCyclopediaCustomPrice(itemId, numericValue)
+	if player and player.updateCyclopediaCustomPrice then
+		player:updateCyclopediaCustomPrice(itemId, numericValue)
+	end
 	modules.game_analyser.LootAnalyser:updateBasePriceFromLootedItems(itemId, numericValue)
 	modules.game_analyser.HuntingAnalyser:updateLootedItemValue(itemId, numericValue)
 	if modules.game_analyser.getLeaderLootType() == PriceTypeEnum.Leader and modules.game_analyser.isLeaderParty() then

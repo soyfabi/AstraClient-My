@@ -856,6 +856,11 @@ void Client::registerLuaFunctions()
     g_lua.bindClassMemberFunction<LocalPlayer>("getInventoryCount", &LocalPlayer::getInventoryCount);
     g_lua.bindClassMemberFunction<LocalPlayer>("hasEquippedItemId", &LocalPlayer::hasEquippedItemId);
     g_lua.bindClassMemberFunction<LocalPlayer>("getResourceValue", &LocalPlayer::getResourceValue);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getBaseExpRate", &LocalPlayer::getBaseExpRate);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getLowLevelRate", &LocalPlayer::getLowLevelRate);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getExpBoostRate", &LocalPlayer::getExpBoostRate);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getStaminaRate", &LocalPlayer::getStaminaRate);
+    g_lua.bindClassMemberFunction<LocalPlayer>("getStoreExpBoostTime", &LocalPlayer::getStoreExpBoostTime);
     g_lua.bindClassMemberFunction<LocalPlayer>("addHUDCondition", &LocalPlayer::addHUDCondition);
     g_lua.bindClassMemberFunction<LocalPlayer>("removeHUDCondition", &LocalPlayer::removeHUDCondition);
     g_lua.bindClassMemberFunction<LocalPlayer>("hasHUDCondition", &LocalPlayer::hasHUDCondition);

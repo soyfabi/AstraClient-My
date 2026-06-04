@@ -81,6 +81,8 @@ public:
     void setBlessings(int blessings);
     void setTaints(int taints);
     void setResourceValue(int resource, uint64 amount);
+    void setExperienceRate(int type, int value);
+    void setStoreExpBoostTime(int value);
 
     int getStates() { return m_states; }
     std::vector<int> getStatesList();
@@ -119,6 +121,11 @@ public:
     int getInventoryCount(int itemId, int upgradeTier = 0);
     bool hasEquippedItemId(int itemId, int upgradeTier = 0);
     uint64 getResourceValue(int resource);
+    int getBaseExpRate() { return getExperienceRate(Otc::EXP_BASE, 100); }
+    int getLowLevelRate() { return getExperienceRate(Otc::EXP_LOWLEVEL, 0); }
+    int getExpBoostRate() { return getExperienceRate(Otc::EXP_XPBOOST, 0); }
+    int getStaminaRate() { return getExperienceRate(Otc::EXP_STAMINA_MULTIPLIER, 100); }
+    int getStoreExpBoostTime() { return m_storeExpBoostTime; }
     void addHUDCondition(int condition) { m_hudConditions.insert(condition); }
     void removeHUDCondition(int condition) { m_hudConditions.erase(condition); }
     bool hasHUDCondition(int condition) { return m_hudConditions.find(condition) != m_hudConditions.end(); }
@@ -213,6 +220,7 @@ private:
     std::vector<int> m_spells;
     std::set<int> m_hudConditions;
     std::map<int, uint64> m_resources;
+    std::map<int, int> m_experienceRates;
 
     int m_states;
     int m_vocation;
@@ -240,6 +248,13 @@ private:
     double m_stamina;
     double m_regenerationTime;
     double m_offlineTrainingTime;
+    int m_storeExpBoostTime = 0;
+
+    int getExperienceRate(int type, int fallback) const
+    {
+        const auto it = m_experienceRates.find(type);
+        return it != m_experienceRates.end() ? it->second : fallback;
+    }
 };
 
 #endif

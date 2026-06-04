@@ -619,6 +619,13 @@ namespace Otc
         PREY_RESOURCETYPE_INVENTORY_GOLD = 1,
         PREY_RESOURCETYPE_PREY_BONUS_REROLLS = 10
     };
+    enum ExperienceRate_t : uint8_t {
+        EXP_BASE = 0,
+        EXP_VOUCHER = 1,
+        EXP_LOWLEVEL = 2,
+        EXP_XPBOOST = 3,
+        EXP_STAMINA_MULTIPLIER = 4
+    };
     enum PreyBonusType_t : uint8_t {
         PREY_BONUS_DAMAGE_BOOST = 0,
         PREY_BONUS_DAMAGE_REDUCTION = 1,

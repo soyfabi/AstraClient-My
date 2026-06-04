@@ -773,6 +773,19 @@ void LocalPlayer::setResourceValue(int resource, uint64 amount)
     }
 }
 
+void LocalPlayer::setExperienceRate(int type, int value)
+{
+    if(m_experienceRates[type] != value) {
+        m_experienceRates[type] = value;
+        callLuaField("onUpdateGainRate", getBaseExpRate(), getLowLevelRate(), getExpBoostRate(), getStaminaRate());
+    }
+}
+
+void LocalPlayer::setStoreExpBoostTime(int value)
+{
+    m_storeExpBoostTime = std::max(0, value);
+}
+
 uint64 LocalPlayer::getResourceValue(int resource)
 {
     const auto it = m_resources.find(resource);

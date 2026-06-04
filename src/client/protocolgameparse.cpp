@@ -1974,15 +1974,21 @@ void ProtocolGame::parsePlayerStats(const InputMessagePtr& msg)
 
     if (g_game.getFeature(Otc::GameExperienceBonus)) {
         if (g_game.getProtocolVersion() <= 1096) {
-            /*double experienceBonus = */msg->getDouble();
+            double experienceBonus = msg->getDouble();
+            m_localPlayer->setExperienceRate(Otc::EXP_BASE, static_cast<int>(experienceBonus * 100));
         } else {
-            /*int baseXpGain = */msg->getU16();
+            int baseXpGain = msg->getU16();
+            m_localPlayer->setExperienceRate(Otc::EXP_BASE, baseXpGain);
             if (!g_game.getFeature(Otc::GameTibia12Protocol)) {
-                /*int voucherAddend = */msg->getU16();
+                int voucherAddend = msg->getU16();
+                m_localPlayer->setExperienceRate(Otc::EXP_VOUCHER, voucherAddend);
             }
-            /*int grindingAddend = */msg->getU16();
-            /*int storeBoostAddend = */ msg->getU16();
-            /*int huntingBoostFactor = */ msg->getU16();
+            int grindingAddend = msg->getU16();
+            m_localPlayer->setExperienceRate(Otc::EXP_LOWLEVEL, grindingAddend);
+            int storeBoostAddend = msg->getU16();
+            m_localPlayer->setExperienceRate(Otc::EXP_XPBOOST, storeBoostAddend);
+            int huntingBoostFactor = msg->getU16();
+            m_localPlayer->setExperienceRate(Otc::EXP_STAMINA_MULTIPLIER, huntingBoostFactor);
         }
     }
 
@@ -2039,8 +2045,10 @@ void ProtocolGame::parsePlayerStats(const InputMessagePtr& msg)
     if (g_game.getFeature(Otc::GameOfflineTrainingTime)) {
         training = msg->getU16();
         if (g_game.getProtocolVersion() >= 1097) {
-            /*int remainingStoreXpBoostSeconds = */msg->getU16();
-            /*bool canBuyMoreStoreXpBoosts = */msg->getU8();
+            int remainingStoreXpBoostSeconds = msg->getU16();
+            bool canBuyMoreStoreXpBoosts = msg->getU8() != 0;
+            m_localPlayer->setStoreExpBoostTime(remainingStoreXpBoostSeconds);
+            m_localPlayer->callLuaField("onExpBoostChange", remainingStoreXpBoostSeconds, canBuyMoreStoreXpBoosts);
         }
     }
 
@@ -3240,18 +3248,51 @@ void ProtocolGame::parseOpenRewardWall(const InputMessagePtr& msg)
 
     if (wasDailyRewardTaken) {
         msg->getString(); // error message
+        if (msg->getU8() != 0) {
+            msg->getU16(); // joker tokens
+        }
+    } else {
+        msg->getU8(); // daily state
+        msg->getU32(); // time left to pickup reward without losing streak
+        msg->getU16(); // joker tokens
     }
 
-    msg->getU32(); // time left to pickup reward without loosing streak
     msg->getU16(); // day streak level
-    msg->getU16(); // unknown
 }
 
 void ProtocolGame::parseDailyReward(const InputMessagePtr& msg)
 {
-    uint8_t count = msg->getU8(); // state
+    uint8_t count = msg->getU8(); // reward days
 
-    // TODO: implement daily reward usage
+    for (int day = 0; day < count; ++day) {
+        for (int accountType = 0; accountType < 2; ++accountType) {
+            uint8_t rewardType = msg->getU8();
+            if (rewardType == 1) {
+                msg->getU8(); // amount to select
+                uint8_t itemCount = msg->getU8();
+                for (int itemIndex = 0; itemIndex < itemCount; ++itemIndex) {
+                    msg->getU16(); // item id
+                    msg->getString(); // item name
+                    msg->getU32(); // item weight
+                }
+            } else if (rewardType == 2) {
+                msg->getU8(); // bundle count
+                uint8_t systemType = msg->getU8();
+                if (systemType == 2) {
+                    msg->getU8(); // prey wildcard count
+                } else if (systemType == 3) {
+                    msg->getU16(); // xp boost minutes
+                }
+            }
+        }
+    }
+
+    uint8_t descriptionCount = msg->getU8();
+    for (int i = 0; i < descriptionCount; ++i) {
+        msg->getString(); // streak description
+        msg->getU8(); // streak id
+    }
+    msg->getU8(); // max unlockable bonuses/free dragons
 }
 
 void ProtocolGame::parseDailyRewardHistory(const InputMessagePtr& msg)
