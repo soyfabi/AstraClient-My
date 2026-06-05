@@ -36,6 +36,23 @@ local function syncSideButton(state, retries)
   end
 end
 
+local function attachMinimapToPanel()
+  if not minimapWindow then
+    return false
+  end
+
+  if minimapWindow:getParent() then
+    return true
+  end
+
+  if m_interface and m_interface.getRightPanel then
+    minimapWindow:setParent(m_interface.getRightPanel())
+    return true
+  end
+
+  return false
+end
+
 function init()
   minimapWindow = g_ui.loadUI('minimap', m_interface.getRightPanel())
   minimapWindow:setHeight(120)
@@ -127,7 +144,7 @@ function toggle()
       sideButton.highlight:setVisible(true)
     end
   else
-    if m_interface.addToPanels(minimapWindow) then
+    if attachMinimapToPanel() then
       minimapWindow:open()
       if sideButton then
         sideButton.highlight:setVisible(false)
@@ -143,7 +160,7 @@ function open()
     return
   end
 
-  m_interface.addToPanels(minimapWindow)
+  attachMinimapToPanel()
   minimapWindow:open()
 
   if minimapButton then
@@ -197,7 +214,7 @@ function loadMap(clean)
   if minimapWidget and minimapWidget.load then
     minimapWidget:load()
   end
-  m_interface.addToPanels(minimapWindow)
+  attachMinimapToPanel()
   MinimapLoader.loaded = true
 end
 

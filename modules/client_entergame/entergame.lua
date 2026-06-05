@@ -75,7 +75,7 @@ local function ensureThingsLoaded()
     return gameThings.getMissing860Message()
   end
 
-  return tr('Voce precisa colocar os arquivos do Tibia 8.60 em data/things/860 (Tibia.dat e Tibia.spr).')
+  return tr('Please place the Tibia 8.60 asset files in data/things/860 (Tibia.dat and Tibia.spr).')
 end
 
 local function normalizeServers()
@@ -722,7 +722,7 @@ function EnterGame.doLogin(account, password, token, host, gtoken)
     g_logger.info("Connecting to: " .. server_ip .. ":" .. server_port)
     protocolLogin:login(server_ip, server_port, G.account, G.password, G.authenticatorToken, G.stayLogged)
   else
-    local thingsError = ensureThingsLoaded() or tr('Voce precisa colocar os arquivos do Tibia 8.60 em data/things/860 (Tibia.dat e Tibia.spr).')
+    local thingsError = ensureThingsLoaded() or tr('Please place the Tibia 8.60 asset files in data/things/860 (Tibia.dat and Tibia.spr).')
     return EnterGame.onError(thingsError)
   end
 end

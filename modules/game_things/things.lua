@@ -20,7 +20,7 @@ function getLoadError()
 end
 
 function getMissing860Message()
-  return tr('Voce precisa colocar os arquivos do Tibia 8.60 em data/things/860 (Tibia.dat e Tibia.spr).')
+  return tr('Please place the Tibia 8.60 asset files in data/things/860 (Tibia.dat and Tibia.spr).')
 end
 
 local function getVersionFromPath(datPath)
