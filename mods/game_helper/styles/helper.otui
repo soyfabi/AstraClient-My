@@ -15,7 +15,7 @@ HelperRules < NewHeadlessWindow
     id: contentPanel
     anchors.fill: parent
     margin: 15 13 17 13
-    TextList
+    Panel
       id: rules
       anchors.top: parent.top
       anchors.left: parent.left
@@ -23,10 +23,17 @@ HelperRules < NewHeadlessWindow
       anchors.bottom: separator.top
       margin-top: 10
       margin-bottom: 10
-      text-align: center
-      padding: 1
-      focusable: false
       background-color: $var-textlist-odd
+      Label
+        id: rulesText
+        anchors.fill: parent
+        margin: 8 10 8 10
+        !text: tr('Extended Terms and Conditions for Helper Services\n\nThese Terms of Service establish the conditions under which D FATO GAMES LTDA provides Helper and related services for the online RPG game Astra. This document complements the Astra Service Agreement accepted by every user when creating an account.\n\n2 - Cheating\n\n2.H - Automations in ATC.\nIf the player is using the ATC client and helper automation features to attack monsters and/or cast spells, they may undergo a standard check by our team. If player absence is confirmed, the player and account may be banned.')
+        font: $var-cip-font
+        color: $var-text-cip-color
+        text-wrap: true
+        text-auto-resize: false
+        text-align: left
     
     HorizontalSeparator
       id: separator
@@ -50,7 +57,7 @@ HelperRules < NewHeadlessWindow
       @onClick: modules.game_helper.closeTerms()
     CheckBox
       id: termCondition
-      width: 100
+      width: 300
       anchors.bottom: parent.bottom
       anchors.left: parent.left
       text-offset: 16 -2

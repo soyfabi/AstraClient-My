@@ -1,5 +1,10 @@
--- Função de log desabilitada
+-- Keep helper startup quiet, but do not hide real UI/load errors.
 local function safeLog(level, message)
+  if level ~= "error" or not g_logger or not g_logger.error then
+    return
+  end
+
+  g_logger.error(tostring(message))
 end
 
 -- Tabela global para organizar submódulos do Helper
@@ -772,11 +777,16 @@ function init()
 
   player = g_game.getLocalPlayer()
   -- hide() moved after panel creation to avoid issues
-  if helper and helper.contentPanel then
-    healingPanel = helper.contentPanel:getChildById('healingPanel')
-    toolsPanelContainer = helper.contentPanel:getChildById('toolsPanelContainer')
+  local helperContentPanel = nil
+  if helper then
+    helperContentPanel = helper.contentPanel or helper:getChildById('contentPanel') or helper:recursiveGetChildById('contentPanel')
+  end
+
+  if helperContentPanel then
+    healingPanel = helperContentPanel:getChildById('healingPanel') or helperContentPanel:recursiveGetChildById('healingPanel')
+    toolsPanelContainer = helperContentPanel:getChildById('toolsPanelContainer') or helperContentPanel:recursiveGetChildById('toolsPanelContainer')
     if toolsPanelContainer then
-      toolsPanel = toolsPanelContainer:getChildById('toolsPanel')
+      toolsPanel = toolsPanelContainer:getChildById('toolsPanel') or toolsPanelContainer:recursiveGetChildById('toolsPanel')
     end
 
     -- Log warning if panels don't exist, but continue initialization
@@ -822,8 +832,10 @@ function init()
       rmvPercentButton2 = healingPanel:recursiveGetChildById("rmvPercentButton2")
       spellPercentBg2 = healingPanel:recursiveGetChildById("spellPercentBg2")
       addPercentButton2 = healingPanel:recursiveGetChildById("addPercentButton2")
-      if helper.contentPanel.healingPanel and helper.contentPanel.healingPanel.healingPanel then
-        healPanel = helper.contentPanel.healingPanel.healingPanel
+      if healingPanel.healingPanel then
+        healPanel = healingPanel.healingPanel
+      else
+        healPanel = healingPanel:recursiveGetChildById('healingPanel')
       end
       priorityButton1 = healingPanel:recursiveGetChildById("priority0")
       priorityButton2 = healingPanel:recursiveGetChildById("priority1")
@@ -831,8 +843,8 @@ function init()
       if toolsPanel then
         equipPanel = toolsPanel:recursiveGetChildById("equipPanel")
       end
-      shooterPanel = helper.contentPanel:getChildById('shooterPanel')
-      equipPanelContainer = helper.contentPanel:getChildById('equipPanelContainer')
+      shooterPanel = helperContentPanel:getChildById('shooterPanel') or helperContentPanel:recursiveGetChildById('shooterPanel')
+      equipPanelContainer = helperContentPanel:getChildById('equipPanelContainer') or helperContentPanel:recursiveGetChildById('equipPanelContainer')
       -- Initialize equip panel module
       if equipPanelContainer and modules.game_helper and modules.game_helper.equip then
         modules.game_helper.equip.init(helper)
@@ -851,14 +863,14 @@ function init()
           modules.game_helper.magicShooter.init(helper)
         end
       end
-      if helper.contentPanel.cavebotPanel then
-        cavebotPanel = helper.contentPanel.cavebotPanel
+      cavebotPanel = helperContentPanel:getChildById('cavebotPanel') or helperContentPanel:recursiveGetChildById('cavebotPanel')
+      if cavebotPanel then
         if modules.game_helper and modules.game_helper.cavebot then
           modules.game_helper.cavebot.init(helper)
         end
       end
-      if helper.contentPanel.timerPanelContainer then
-        timerPanelContainer = helper.contentPanel.timerPanelContainer
+      timerPanelContainer = helperContentPanel:getChildById('timerPanelContainer') or helperContentPanel:recursiveGetChildById('timerPanelContainer')
+      if timerPanelContainer then
         if modules.game_helper and modules.game_helper.timerPanel then
           modules.game_helper.timerPanel.init(timerPanelContainer)
         end
@@ -1072,7 +1084,7 @@ local function getHelperContentPanel()
     return nil
   end
 
-  return helper.contentPanel or helper:getChildById('contentPanel')
+  return helper.contentPanel or helper:getChildById('contentPanel') or helper:recursiveGetChildById('contentPanel')
 end
 
 local function refreshHelperPanelRefs()
@@ -1081,10 +1093,10 @@ local function refreshHelperPanelRefs()
     return nil
   end
 
-  healingPanel = healingPanel or contentPanel:getChildById('healingPanel')
-  toolsPanelContainer = toolsPanelContainer or contentPanel:getChildById('toolsPanelContainer')
+  healingPanel = healingPanel or contentPanel:getChildById('healingPanel') or contentPanel:recursiveGetChildById('healingPanel')
+  toolsPanelContainer = toolsPanelContainer or contentPanel:getChildById('toolsPanelContainer') or contentPanel:recursiveGetChildById('toolsPanelContainer')
   if toolsPanelContainer and not toolsPanel then
-    toolsPanel = toolsPanelContainer:getChildById('toolsPanel')
+    toolsPanel = toolsPanelContainer:getChildById('toolsPanel') or toolsPanelContainer:recursiveGetChildById('toolsPanel')
   end
   if healingPanel then
     healPanel = healPanel or healingPanel.healingPanel or healingPanel:recursiveGetChildById('healingPanel')
@@ -1105,10 +1117,10 @@ local function refreshHelperPanelRefs()
     priorityButton2 = priorityButton2 or healingPanel:recursiveGetChildById("priority1")
     priorityButton3 = priorityButton3 or healingPanel:recursiveGetChildById("priority2")
   end
-  shooterPanel = shooterPanel or contentPanel:getChildById('shooterPanel')
-  equipPanelContainer = equipPanelContainer or contentPanel:getChildById('equipPanelContainer')
-  cavebotPanel = cavebotPanel or contentPanel:getChildById('cavebotPanel')
-  timerPanelContainer = timerPanelContainer or contentPanel:getChildById('timerPanelContainer')
+  shooterPanel = shooterPanel or contentPanel:getChildById('shooterPanel') or contentPanel:recursiveGetChildById('shooterPanel')
+  equipPanelContainer = equipPanelContainer or contentPanel:getChildById('equipPanelContainer') or contentPanel:recursiveGetChildById('equipPanelContainer')
+  cavebotPanel = cavebotPanel or contentPanel:getChildById('cavebotPanel') or contentPanel:recursiveGetChildById('cavebotPanel')
+  timerPanelContainer = timerPanelContainer or contentPanel:getChildById('timerPanelContainer') or contentPanel:recursiveGetChildById('timerPanelContainer')
 
   return contentPanel
 end
@@ -1127,7 +1139,7 @@ local function getHelperTabBar(contentPanel)
     return nil
   end
 
-  return contentPanel.optionsTabBar or contentPanel:getChildById('optionsTabBar')
+  return contentPanel.optionsTabBar or contentPanel:getChildById('optionsTabBar') or contentPanel:recursiveGetChildById('optionsTabBar')
 end
 
 local function setHelperSelectedMenu(menuId)
@@ -1172,6 +1184,30 @@ local function showFallbackHelperMenu()
   end
 end
 
+local function hasVisibleHelperMenu()
+  refreshHelperPanelRefs()
+
+  local panels = {
+    healingPanel,
+    toolsPanelContainer,
+    shooterPanel,
+    equipPanelContainer,
+    cavebotPanel,
+    timerPanelContainer
+  }
+
+  for _, panel in ipairs(panels) do
+    local ok, visible = pcall(function()
+      return panel and panel:isVisible()
+    end)
+    if ok and visible then
+      return true
+    end
+  end
+
+  return false
+end
+
 function show()
   if helper then
     refreshHelperPanelRefs()
@@ -1182,7 +1218,7 @@ function show()
     local success = pcall(function()
       loadMenu(lastActiveMenu or 'healingMenu')
     end)
-    if not success then
+    if not success or not hasVisibleHelperMenu() then
       showFallbackHelperMenu()
     end
   end
@@ -1236,13 +1272,6 @@ function createHelperRules()
     return
   end
 
-  local rulesTextList = rulesWindow:recursiveGetChildById('rules')
-  if not rulesTextList then
-    return
-  end
-
-  rulesTextList:destroyChildren()
-
   local nextButton = rulesWindow:recursiveGetChildById('next')
   if nextButton then
     nextButton:setEnabled(false)
@@ -1258,15 +1287,10 @@ function createHelperRules()
                    "2 - Cheating\n\n" ..
                    "2.H - Automations in ATC.\n If the player is using the ATC client and helper automation features to attack monsters and/or cast spells, they may undergo a standard check by our team. If player absence is confirmed, the player and account may be banned."
 
-  local label = g_ui.createWidget('UILabel', rulesTextList)
-  label:setText(longText)
-  label:setColor(tovar('$var-text-cip-color'))
-  label:setFont(tovar('$var-cip-font'))
-  label:setTextWrap(true)
-  label:setTextAutoResize(true)
-  label:setMarginRight(10)
-  label:setMarginLeft(10)
-  label:setBackgroundColor('#414141')
+  local rulesText = rulesWindow:recursiveGetChildById('rulesText')
+  if rulesText then
+    rulesText:setText(longText)
+  end
 end
 
 function onHelperTermCondition(widgetId, value)
@@ -1581,8 +1605,9 @@ function online()
       _Helper.Shortcut.createPanel()
     end
     -- Sincronizar checkbox do helper com o valor carregado
-    if helper and helper.contentPanel then
-      local shortcutsCheckbox = helper.contentPanel:recursiveGetChildById('shortcuts')
+    local contentPanel = getHelperContentPanel()
+    if contentPanel then
+      local shortcutsCheckbox = contentPanel:recursiveGetChildById('shortcuts')
       if shortcutsCheckbox then
         shortcutsCheckbox:setChecked(_Helper.Shortcut.isVisible())
       end
@@ -2071,6 +2096,10 @@ function loadMenu(menuId)
     cavebotMenu = 'cavebotMenu',
     timerMenu = "timerMenu"
   }
+
+  if not menuId or not buttons[menuId] then
+    menuId = 'healingMenu'
+  end
 
   for buttonName, buttonId in pairs(buttons) do
     local button = optionsTabBar:getChildById(buttonId)
@@ -5967,13 +5996,14 @@ end
 -- ===== END SPECIAL FOODS =====
 
 function botStatus()
-  if not helper or not helper.contentPanel then
+  local contentPanel = getHelperContentPanel()
+  if not contentPanel then
     return
   end
 
-  local helperStatus = helper.contentPanel:recursiveGetChildById("helperStatus")
-  local helperStatusLabel = helper.contentPanel:recursiveGetChildById("helperStatusLabel")
-  local setKeyButton = helper.contentPanel:recursiveGetChildById("setKeyHelperButton")
+  local helperStatus = contentPanel:recursiveGetChildById("helperStatus")
+  local helperStatusLabel = contentPanel:recursiveGetChildById("helperStatusLabel")
+  local setKeyButton = contentPanel:recursiveGetChildById("setKeyHelperButton")
 
   if not helperStatusLabel then
     return
