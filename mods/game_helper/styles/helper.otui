@@ -54,11 +54,11 @@ HelperRules < NewHeadlessWindow
       anchors.bottom: parent.bottom
       anchors.left: parent.left
       text-offset: 16 -2
-      !text: tr('I agree with OTC Terms and Conditions.')
-      !tooltip: tr('I have read and I agree to the Extended OTC Service Agreement and the OTC Privacy Policy.')
+      !text: tr('I agree with Astra Terms and Conditions.')
+      !tooltip: tr('I have read and I agree to the Extended Astra Service Agreement and the Astra Privacy Policy.')
       margin-bottom: 5
-      font: $var-main-font
-      color: $var-text-color
+      font: $var-cip-font
+      color: $var-text-cip-color
       text-auto-resize: true
       @onCheckChange: modules.game_helper.onHelperTermCondition(self:getId(), self:isChecked())
 

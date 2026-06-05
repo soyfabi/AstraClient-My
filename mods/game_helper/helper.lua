@@ -1067,14 +1067,236 @@ function hide()
   end
 end
 
+local function getHelperContentPanel()
+  if not helper then
+    return nil
+  end
+
+  return helper.contentPanel or helper:getChildById('contentPanel')
+end
+
+local function refreshHelperPanelRefs()
+  local contentPanel = getHelperContentPanel()
+  if not contentPanel then
+    return nil
+  end
+
+  healingPanel = healingPanel or contentPanel:getChildById('healingPanel')
+  toolsPanelContainer = toolsPanelContainer or contentPanel:getChildById('toolsPanelContainer')
+  if toolsPanelContainer and not toolsPanel then
+    toolsPanel = toolsPanelContainer:getChildById('toolsPanel')
+  end
+  if healingPanel then
+    healPanel = healPanel or healingPanel.healingPanel or healingPanel:recursiveGetChildById('healingPanel')
+    potionButton2 = potionButton2 or healingPanel:recursiveGetChildById("potionButton2")
+    rmvPotionPercentButton2 = rmvPotionPercentButton2 or healingPanel:recursiveGetChildById("rmvPotionPercentButton2")
+    potionPercentBg2 = potionPercentBg2 or healingPanel:recursiveGetChildById("potionPercentBg2")
+    addPotionPercentButton2 = addPotionPercentButton2 or healingPanel:recursiveGetChildById("addPotionPercentButton2")
+    priority2 = priority2 or healingPanel:recursiveGetChildById("priority2")
+    friendHealingPanel = friendHealingPanel or healingPanel:recursiveGetChildById("friendHealingPanel")
+    granSioPanel = granSioPanel or healingPanel:recursiveGetChildById("granSioPanel")
+    masResPanel = masResPanel or healingPanel:recursiveGetChildById("masResPanel")
+    healingTargetModePanel = healingTargetModePanel or healingPanel:recursiveGetChildById("healingTargetModePanel")
+    spellButton2 = spellButton2 or healingPanel:recursiveGetChildById("spellButton2")
+    rmvPercentButton2 = rmvPercentButton2 or healingPanel:recursiveGetChildById("rmvPercentButton2")
+    spellPercentBg2 = spellPercentBg2 or healingPanel:recursiveGetChildById("spellPercentBg2")
+    addPercentButton2 = addPercentButton2 or healingPanel:recursiveGetChildById("addPercentButton2")
+    priorityButton1 = priorityButton1 or healingPanel:recursiveGetChildById("priority0")
+    priorityButton2 = priorityButton2 or healingPanel:recursiveGetChildById("priority1")
+    priorityButton3 = priorityButton3 or healingPanel:recursiveGetChildById("priority2")
+  end
+  shooterPanel = shooterPanel or contentPanel:getChildById('shooterPanel')
+  equipPanelContainer = equipPanelContainer or contentPanel:getChildById('equipPanelContainer')
+  cavebotPanel = cavebotPanel or contentPanel:getChildById('cavebotPanel')
+  timerPanelContainer = timerPanelContainer or contentPanel:getChildById('timerPanelContainer')
+
+  return contentPanel
+end
+
+local helperMenuIds = {
+  'healingMenu',
+  'toolsMenu',
+  'shooterMenu',
+  'equipMenu',
+  'cavebotMenu',
+  'timerMenu'
+}
+
+local function getHelperTabBar(contentPanel)
+  if not contentPanel then
+    return nil
+  end
+
+  return contentPanel.optionsTabBar or contentPanel:getChildById('optionsTabBar')
+end
+
+local function setHelperSelectedMenu(menuId)
+  local contentPanel = refreshHelperPanelRefs()
+  local tabBar = getHelperTabBar(contentPanel)
+  if not tabBar then
+    return
+  end
+
+  for _, buttonId in ipairs(helperMenuIds) do
+    local button = tabBar:getChildById(buttonId)
+    if button then
+      button:setChecked(buttonId == menuId)
+    end
+  end
+end
+
+local function showFallbackHelperMenu()
+  refreshHelperPanelRefs()
+  setHelperSelectedMenu('healingMenu')
+
+  if healingPanel then
+    healingPanel:show(true)
+  end
+  if toolsPanelContainer then
+    toolsPanelContainer:hide()
+  end
+  if shooterPanel then
+    shooterPanel:hide()
+  end
+  if equipPanelContainer then
+    equipPanelContainer:hide()
+  end
+  if cavebotPanel then
+    cavebotPanel:hide()
+  end
+  if timerPanelContainer then
+    timerPanelContainer:hide()
+  end
+  if helper then
+    helper:setSize(tosize("329 309"))
+  end
+end
+
 function show()
   if helper then
+    refreshHelperPanelRefs()
     helper:show(true)
     helper:raise()
     helper:focus()
     g_keyboard.bindKeyPress('Tab', toggleNextWindow, helper)
-    loadMenu(lastActiveMenu)
+    local success = pcall(function()
+      loadMenu(lastActiveMenu or 'healingMenu')
+    end)
+    if not success then
+      showFallbackHelperMenu()
+    end
   end
+end
+
+local function ensureHelperRules()
+  if helperRules then
+    return helperRules
+  end
+
+  local rootWidget = g_ui.getRootWidget()
+  if not rootWidget then
+    return nil
+  end
+
+  helperRules = g_ui.createWidget('HelperRules', rootWidget)
+  if helperRules then
+    helperRules:hide()
+  end
+
+  return helperRules
+end
+
+function showTerms()
+  if helperConfig and helperConfig.terms then
+    show()
+    return
+  end
+
+  local rulesWindow = ensureHelperRules()
+  if not rulesWindow then
+    show()
+    return
+  end
+
+  createHelperRules()
+  rulesWindow:show()
+  rulesWindow:raise()
+  rulesWindow:focus()
+end
+
+function closeTerms()
+  if helperRules then
+    helperRules:hide()
+  end
+end
+
+function createHelperRules()
+  local rulesWindow = ensureHelperRules()
+  if not rulesWindow then
+    return
+  end
+
+  local rulesTextList = rulesWindow:recursiveGetChildById('rules')
+  if not rulesTextList then
+    return
+  end
+
+  rulesTextList:destroyChildren()
+
+  local nextButton = rulesWindow:recursiveGetChildById('next')
+  if nextButton then
+    nextButton:setEnabled(false)
+  end
+
+  local termsCheckbox = rulesWindow:recursiveGetChildById('termCondition')
+  if termsCheckbox then
+    termsCheckbox:setChecked(false)
+  end
+
+  local longText = "\n           Extended Terms and Conditions for Helper Services\n\n" ..
+                   " These Terms of Service establish the conditions under which D FATO GAMES LTDA provides 'Helper' and related services for the online RPG game 'Astra'. This document complements the Astra Service Agreement accepted by every user when creating an account.\n\n" ..
+                   "2 - Cheating\n\n" ..
+                   "2.H - Automations in ATC.\n If the player is using the ATC client and helper automation features to attack monsters and/or cast spells, they may undergo a standard check by our team. If player absence is confirmed, the player and account may be banned."
+
+  local label = g_ui.createWidget('UILabel', rulesTextList)
+  label:setText(longText)
+  label:setColor(tovar('$var-text-cip-color'))
+  label:setFont(tovar('$var-cip-font'))
+  label:setTextWrap(true)
+  label:setTextAutoResize(true)
+  label:setMarginRight(10)
+  label:setMarginLeft(10)
+  label:setBackgroundColor('#414141')
+end
+
+function onHelperTermCondition(widgetId, value)
+  if not helperRules then
+    return
+  end
+
+  local nextButton = helperRules:recursiveGetChildById('next')
+  if nextButton then
+    nextButton:setEnabled(value)
+  end
+end
+
+function onHelperTermConditionNext()
+  if helperRules then
+    helperRules:hide()
+  end
+
+  if helperConfig then
+    helperConfig.terms = true
+  end
+  if saveSettings then
+    pcall(saveSettings)
+  end
+
+  show()
+end
+
+function hasAcceptedTerms()
+  return helperConfig and helperConfig.terms or false
 end
 
 function onBTCHelperClick()
@@ -1830,7 +2052,14 @@ end
 _Helper.getShooterProfile = getShooterProfile
 
 function loadMenu(menuId)
-  if not helper or not helper.contentPanel then
+  local contentPanel = refreshHelperPanelRefs()
+  if not helper or not contentPanel then
+    return
+  end
+
+  local optionsTabBar = getHelperTabBar(contentPanel)
+  if not optionsTabBar then
+    showFallbackHelperMenu()
     return
   end
 
@@ -1844,7 +2073,7 @@ function loadMenu(menuId)
   }
 
   for buttonName, buttonId in pairs(buttons) do
-    local button = helper.contentPanel.optionsTabBar:getChildById(buttonId)
+    local button = optionsTabBar:getChildById(buttonId)
     if button then
       button:setChecked(false)
     end
@@ -1863,7 +2092,7 @@ function loadMenu(menuId)
 
   lastActiveMenu = menuId
 
-  local selectedButton = helper.contentPanel.optionsTabBar:getChildById(menuId)
+  local selectedButton = optionsTabBar:getChildById(menuId)
   if selectedButton then
     selectedButton:setChecked(true)
   end
@@ -1884,6 +2113,11 @@ function loadMenu(menuId)
   end
 
   player = currentPlayer
+
+  if not healingPanel or not shooterPanel then
+    showFallbackHelperMenu()
+    return
+  end
 
   if menuId == 'healingMenu' then
     healingPanel:show(true)
