@@ -50,6 +50,7 @@ Thumbs.db
 src/framework/graphics/dx/
 modules/.project/modules.sublime-workspace
 vc16/.vs/
+vc17/.vs/
 vc16/DirectX/
 vc16/OpenGL/
 vc16/Debug/
