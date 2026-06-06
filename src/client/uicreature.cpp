@@ -50,7 +50,8 @@ void UICreature::drawSelf(Fw::DrawPane drawPane)
             }
         }
 
-        m_creature->drawOutfit(Rect(getPaddingRect().topLeft(), getSize() * m_scale), m_direction, m_imageColor, isAnimating(), true, m_oldScaling);
+        const bool uiWalkingAnimation = !m_idleAnimate || m_staticWalking;
+        m_creature->drawOutfit(Rect(getPaddingRect().topLeft(), getSize() * m_scale), m_direction, m_imageColor, isAnimating(), uiWalkingAnimation, m_oldScaling);
     }
 }
 
@@ -115,6 +116,10 @@ void UICreature::onStyleApply(const std::string& styleName, const OTMLNodePtr& s
             setScale(node->value<float>());
         } else if (node->tag() == "animate") {
             setAnimate(node->value<bool>());
+        } else if (node->tag() == "idle-animate") {
+            setIdleAnimate(node->value<bool>());
+        } else if (node->tag() == "static-walking") {
+            setStaticWalking(node->value<bool>());
         } else if (node->tag() == "old-scaling") {
             setOldScaling(node->value<bool>());
         }
