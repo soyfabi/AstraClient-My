@@ -19,6 +19,8 @@ local spellCooldownCache = {}
 local spellGroupCooldownCache = {}
 local spellGroupPressed = {}
 
+local MULTI_ACTION_DELAY_MS = 500
+
 local cachedItemWidget = {}
 local dragButton = nil
 local dragItem = nil
@@ -1534,6 +1536,34 @@ function assignSpell(button, multiSlotIndex)
 		window:destroy()
 	end
 
+function saveMultiState(button)
+	return button.cache and button.cache.multiSlotIndex,
+	       button.cache and button.cache.multiActions
+end
+
+function restoreMultiState(button, slotIndex, actions)
+	if slotIndex ~= nil then button.cache.multiSlotIndex = slotIndex end
+	if actions ~= nil then button.cache.multiActions = actions end
+end
+
+function hasMultiActions(multiActions)
+	if not multiActions then return false end
+	local count = 0
+	for i = 1, 3 do
+		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
+	end
+	return count >= 2
+end
+
+function countFilledMultiSlots(multiActions)
+	if not multiActions then return 0 end
+	local count = 0
+	for i = 1, 3 do
+		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
+	end
+	return count
+end
+
 	local okFunc = function(destroy)
 		local selected = radio:getSelectedWidget()
 		if not selected then cancelFunc() return end
@@ -2728,35 +2758,6 @@ end
 multiPanel = nil
 cacheMultiActionButtons = {}
 multiActionCooldownEvents = {}
-local MULTI_ACTION_DELAY_MS = 500
-
-local function saveMultiState(button)
-	return button.cache and button.cache.multiSlotIndex,
-	       button.cache and button.cache.multiActions
-end
-
-local function restoreMultiState(button, slotIndex, actions)
-	if slotIndex ~= nil then button.cache.multiSlotIndex = slotIndex end
-	if actions ~= nil then button.cache.multiActions = actions end
-end
-
-local function hasMultiActions(multiActions)
-	if not multiActions then return false end
-	local count = 0
-	for i = 1, 3 do
-		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
-	end
-	return count >= 2
-end
-
-local function countFilledMultiSlots(multiActions)
-	if not multiActions then return 0 end
-	local count = 0
-	for i = 1, 3 do
-		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
-	end
-	return count
-end
 
 local function splitButtonId(button)
 	return string.match(button:getId(), "(.*)%.(.*)")
@@ -2972,6 +2973,7 @@ end
 
 function assignMultiAction(button, skipPrefill)
 	if not button then return end
+	if not button.cache then getButtonCache(button) end
 	local actionbar = button:getParent():getParent()
 	local barN = actionbar and actionbar.n or 1
 
@@ -3131,6 +3133,7 @@ function clearSingleCache(button)
 end
 
 function assignMultiActionSpell(button, multiButtonIndex)
+	if not button or not button.cache or not button.cache.multiActions then return end
 	local slotData = button.cache.multiActions[multiButtonIndex]
 	if slotData and not table.empty(slotData) then
 		if slotData.chatText then
