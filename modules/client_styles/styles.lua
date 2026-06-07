@@ -7,46 +7,50 @@ local resourceLoaders = {
 }
 
 function init()
-    local device = g_platform.getDevice()
-    importResources("styles", "otui", device)
-    importResources("fonts", "otfont", device)
-    importResources("fonts", "ttf", device)
-    importResources("fonts", "otf", device)
-    importResources("particles", "otps", device)
+    local function safeCall(name, callback)
+        local ok, err = pcall(callback)
+        if not ok then
+            g_logger.warning("[client_styles] " .. name .. ": " .. tostring(err))
+        end
+    end
 
-    g_mouse.loadCursors('/data/cursors/cursors')
+    safeCall("import styles", function()
+        importResources("styles", "otui")
+    end)
+    safeCall("import otfonts", function()
+        importResources("fonts", "otfont")
+    end)
+    safeCall("import ttf", function()
+        importResources("fonts", "ttf")
+    end)
+    safeCall("import otf", function()
+        importResources("fonts", "otf")
+    end)
+    safeCall("import particles", function()
+        importResources("particles", "otps")
+    end)
+    safeCall("load cursors", function()
+        g_mouse.loadCursors('/data/cursors/cursors')
+    end)
 end
 
 function terminate()
 end
 
-function importResources(dir, type, device)
+function importResources(dir, type)
     local path = '/' .. dir .. '/'
+    if not g_resources.directoryExists(path) then
+        return
+    end
     local files = g_resources.listDirectoryFiles(path, true, false, true)
     for _, file in pairs(files) do
         if g_resources.isFileType(file, type) then
-            local success, err = pcall(resourceLoaders[type], file)
-            if not success then
-                g_logger.warning("Failed to load resource: " .. tostring(file) .. " (" .. tostring(err) .. ")")
-            end
+            resourceLoaders[type](file)
         end
     end
-
-    if device then
-        local devicePath = g_platform.getDeviceShortName(device.type)
-        if devicePath ~= "" then
-            importResources(dir .. '/' .. devicePath, type)
-        end
-        local osPath = g_platform.getOsShortName(device.os)
-        if osPath ~= "" then
-            importResources(dir .. '/' .. osPath, type)
-        end
-    end
-    return files
 end
 
 function reloadParticles()
     g_particles.terminate()
-    local device = g_platform.getDevice()
-    importResources("particles", "otps", device)
+    importResources("particles", "otps")
 end
