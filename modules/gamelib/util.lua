@@ -587,48 +587,50 @@ function translateDisplayHotkey(text)
 end
 
 function translateVocation(id)
-	if id == 1 or id == 11 then
-		return 8 -- ek
-	elseif id == 2 or id == 12 then
-		return 7 -- rp
-	elseif id == 3 or id == 13 then
-		return 5 -- ms
-	elseif id == 4 or id == 14 then
-		return 6 -- ed
-  elseif id == 5 or id == 15 then
+  if not id or id == 0 then return 0 end
+  if id == 8 or id % 10 == 1 then
+    return 8 -- ek
+  elseif id == 7 or id % 10 == 2 then
+    return 7 -- rp
+  elseif id == 5 or id % 10 == 3 then
+    return 5 -- ms
+  elseif id == 6 or id % 10 == 4 then
+    return 6 -- ed
+  elseif id == 9 or id % 10 == 5 then
     return 9 -- em
-	end
+  end
   return 0
 end
 
 function translateWheelVocation(id)
-	if id == 1 or id == 11 then
-		return 1 -- ek
-	elseif id == 2 or id == 12 then
-		return 2 -- rp
-	elseif id == 3 or id == 13 then
-		return 3 -- ms
-	elseif id == 4 or id == 14 then
-		return 4 -- ed
-  elseif id == 5 or id == 15 then
+  if not id or id == 0 then return 0 end
+  if id == 8 or id % 10 == 1 then
+    return 1 -- ek
+  elseif id == 7 or id % 10 == 2 then
+    return 2 -- rp
+  elseif id == 5 or id % 10 == 3 then
+    return 3 -- ms
+  elseif id == 6 or id % 10 == 4 then
+    return 4 -- ed
+  elseif id == 9 or id % 10 == 5 then
     return 5 -- em
-	end
+  end
   return 0
 end
 
 function translateVocationName(id)
-	if id == 1 or id == 11 then
-		return "Knight"
-	elseif id == 2 or id == 12 then
-		return "Paladin"
-	elseif id == 3 or id == 13 then
-		return "Sorcerer"
-	elseif id == 4 or id == 14 then
-		return "Druid"
-  elseif id == 5 or id == 15 then
+  if not id or id == 0 then return "Rookie" end
+  if id == 8 or id % 10 == 1 then
+    return "Knight"
+  elseif id == 7 or id % 10 == 2 then
+    return "Paladin"
+  elseif id == 5 or id % 10 == 3 then
+    return "Sorcerer"
+  elseif id == 6 or id % 10 == 4 then
+    return "Druid"
+  elseif id == 9 or id % 10 == 5 then
     return "Monk"
-	end
-
+  end
   return "Rookie"
 end
 

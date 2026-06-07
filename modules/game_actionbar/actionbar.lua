@@ -1,7 +1,7 @@
 local actionBars = {}
 local activeActionBars = {}
 
-local window = nil
+local activeWindow = nil
 
 local mouseGrabberWidget = nil
 local gameRootPanel = nil
@@ -231,6 +231,11 @@ function offline()
 	if window then
 		window:destroy()
 		window = nil
+	end
+
+	if activeWindow then
+		activeWindow:destroy()
+		activeWindow = nil
 	end
 
 	offLineEvents()
@@ -1416,15 +1421,53 @@ function onAssignItem(self, mousePosition, mouseButton, button)
 	assignItem(button, itemId, itemTier)
 end
 
+function saveMultiState(button)
+	return button.cache and button.cache.multiSlotIndex,
+	       button.cache and button.cache.multiActions
+end
+
+saveMulti = saveMultiState
+
+function restoreMultiState(button, slotIndex, actions)
+	if slotIndex ~= nil then button.cache.multiSlotIndex = slotIndex end
+	if actions ~= nil then button.cache.multiActions = actions end
+end
+
+restoreMulti = restoreMultiState
+
+function hasMultiActions(multiActions)
+	if not multiActions then return false end
+	local count = 0
+	for i = 1, 3 do
+		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
+	end
+	return count >= 2
+end
+
+function countFilledMultiSlots(multiActions)
+	if not multiActions then return 0 end
+	local count = 0
+	for i = 1, 3 do
+		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
+	end
+	return count
+end
+
 function assignSpell(button, multiSlotIndex)
 	getButtonCache(button).multiSlotIndex = multiSlotIndex or nil
 	local radio = UIRadioGroup.create()
-	window = g_ui.loadUI('spell', g_ui.getRootWidget())
+	if activeWindow and not activeWindow:isDestroyed() then
+		activeWindow:destroy()
+	end
+	activeWindow = g_ui.loadUI('spell', g_ui.getRootWidget())
+	local window = activeWindow
 	window:show()
 	g_client.setInputLockWidget(window)
 	window:raise()
 	scheduleEvent(function()
-		window:focus()
+		if window and not window:isDestroyed() then
+			window:focus()
+		end
 	end, 50)
 	
 	window:setText("Assign Spell to Action Button ".. button:getId())
@@ -1533,40 +1576,12 @@ function assignSpell(button, multiSlotIndex)
   local cancelFunc = function()
 		g_client.setInputLockWidget(nil)
 		updateButton(button)
-		window:destroy()
+		if window and not window:isDestroyed() then
+			window:destroy()
+		end
 	end
 
-function saveMultiState(button)
-	return button.cache and button.cache.multiSlotIndex,
-	       button.cache and button.cache.multiActions
-end
 
-local saveMulti = saveMultiState
-
-function restoreMultiState(button, slotIndex, actions)
-	if slotIndex ~= nil then button.cache.multiSlotIndex = slotIndex end
-	if actions ~= nil then button.cache.multiActions = actions end
-end
-
-local restoreMulti = restoreMultiState
-
-function hasMultiActions(multiActions)
-	if not multiActions then return false end
-	local count = 0
-	for i = 1, 3 do
-		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
-	end
-	return count >= 2
-end
-
-function countFilledMultiSlots(multiActions)
-	if not multiActions then return 0 end
-	local count = 0
-	for i = 1, 3 do
-		if type(multiActions[i]) == "table" and next(multiActions[i]) ~= nil then count = count + 1 end
-	end
-	return count
-end
 
 	local okFunc = function(destroy)
 		local selected = radio:getSelectedWidget()
@@ -1589,17 +1604,19 @@ end
 			param = param .. ' "' .. paramText:gsub('"', '') .. '"'
 		end
 
-		local savedMultiSlotIndex, savedMultiActions = saveMulti(button)
+		local savedMultiSlotIndex, savedMultiActions = saveMultiState(button)
 
 		Options.createOrUpdateText(tonumber(barID), tonumber(buttonID), param, true)
 		updateButton(button)
 
-		restoreMulti(button, savedMultiSlotIndex, savedMultiActions)
+		restoreMultiState(button, savedMultiSlotIndex, savedMultiActions)
 		handleMultiSlotSave(button)
 
 		if destroy then
 			g_client.setInputLockWidget(nil)
-			window:destroy()
+			if window and not window:isDestroyed() then
+				window:destroy()
+			end
 		end
 	end
 
@@ -1616,12 +1633,18 @@ end
 end
 
 function assignText(button)
-	window = g_ui.loadUI('text', g_ui.getRootWidget())
+	if activeWindow and not activeWindow:isDestroyed() then
+		activeWindow:destroy()
+	end
+	activeWindow = g_ui.loadUI('text', g_ui.getRootWidget())
+	local window = activeWindow
 	window:show()
 	g_client.setInputLockWidget(window)
 	window:raise()
 	scheduleEvent(function()
-		window:focus()
+		if window and not window:isDestroyed() then
+			window:focus()
+		end
 	end, 50)
 
 	window:setText("Assign Text to Action Button ".. button:getId())
@@ -1642,23 +1665,27 @@ function assignText(button)
 		local text = window.contentPanel.text:getText()
 		local fomartedText = Spells.getSpellFormatedName(text)
 		local barID, buttonID = string.match(button:getId(), "(.*)%.(.*)")
-		local savedMultiSlotIndex, savedMultiActions = saveMulti(button)
+		local savedMultiSlotIndex, savedMultiActions = saveMultiState(button)
 
 		Options.createOrUpdateText(tonumber(barID), tonumber(buttonID), fomartedText, autoSay)
 		updateButton(button)
 
-		restoreMulti(button, savedMultiSlotIndex, savedMultiActions)
+		restoreMultiState(button, savedMultiSlotIndex, savedMultiActions)
 		handleMultiSlotSave(button)
 
 		if destroy then
 			g_client.setInputLockWidget(nil)
-			window:destroy()
+			if window and not window:isDestroyed() then
+				window:destroy()
+			end
 		end
 	end
 
 	local cancelFunc = function()
 		g_client.setInputLockWidget(nil)
-		window:destroy()
+		if window and not window:isDestroyed() then
+			window:destroy()
+		end
 	end
 
 	window.contentPanel.buttonOk.onClick = function() okFunc(true) end
@@ -1695,16 +1722,19 @@ function assignItem(button, itemId, itemTier, dragEvent)
 	local item = button.item:getItem()
 	local id = button.item:getItemId()
 
-	if window then
-		window:destroy()
+	if activeWindow and not activeWindow:isDestroyed() then
+		activeWindow:destroy()
 	end
 
-	window = g_ui.loadUI('object', g_ui.getRootWidget())
+	activeWindow = g_ui.loadUI('object', g_ui.getRootWidget())
+	local window = activeWindow
 	window:show()
 	g_client.setInputLockWidget(window)
 	window:raise()
 	scheduleEvent(function()
-		window:focus()
+		if window and not window:isDestroyed() then
+			window:focus()
+		end
 	end, 50)
 
 	window:setText("Assign Object to Action Button " .. button:getId())
@@ -1823,15 +1853,17 @@ function assignItem(button, itemId, itemTier, dragEvent)
 
 		Options.createOrUpdateAction(tonumber(barID), tonumber(buttonID), selected, itemId, itemTier, smartMode)
 
-		local savedMultiSlotIndex, savedMultiActions = saveMulti(button)
+		local savedMultiSlotIndex, savedMultiActions = saveMultiState(button)
 		updateButton(button)
 
-		restoreMulti(button, savedMultiSlotIndex, savedMultiActions)
+		restoreMultiState(button, savedMultiSlotIndex, savedMultiActions)
 		handleMultiSlotSave(button)
 
 		if destroy then
 			g_client.setInputLockWidget(nil)
-			window:destroy()
+			if window and not window:isDestroyed() then
+				window:destroy()
+			end
 			radio:destroy()
 		end
 	end
@@ -1839,7 +1871,9 @@ function assignItem(button, itemId, itemTier, dragEvent)
 	local cancelFunc = function()
 		g_client.setInputLockWidget(nil)
 		updateButton(button)
-		window:destroy()
+		if window and not window:isDestroyed() then
+			window:destroy()
+		end
 		radio:destroy()
 	end
 
@@ -1858,7 +1892,11 @@ function assignItem(button, itemId, itemTier, dragEvent)
 end
 
 function assignHotkey(button)
-	window = g_ui.loadUI('hotkey', g_ui.getRootWidget())
+	if activeWindow and not activeWindow:isDestroyed() then
+		activeWindow:destroy()
+	end
+	activeWindow = g_ui.loadUI('hotkey', g_ui.getRootWidget())
+	local window = activeWindow
 	window:show()
 	g_client.setInputLockWidget(window)
 	window:raise()
@@ -1979,12 +2017,18 @@ end
 
 function assignPassive(button)
 	local radio = UIRadioGroup.create()
-	window = g_ui.loadUI('passive', g_ui.getRootWidget())
+	if activeWindow and not activeWindow:isDestroyed() then
+		activeWindow:destroy()
+	end
+	activeWindow = g_ui.loadUI('passive', g_ui.getRootWidget())
+	local window = activeWindow
 	window:show()
 	g_client.setInputLockWidget(window)
 	window:raise()
 	scheduleEvent(function()
-		window:focus()
+		if window and not window:isDestroyed() then
+			window:focus()
+		end
 	end, 50)
 
 	window:setText("Assign Passive to Action Button ".. button:getId())
@@ -2663,7 +2707,8 @@ function canEquipItem(item)
 	return false
 end
 
-function onSearchTextChange(text)
+function onSearchTextChange(widget, text)
+	local window = widget:getParent():getParent()
 	local spellList = window:recursiveGetChildById('spellList')
 	for _, child in pairs(spellList:getChildren()) do
 		local name = child:getText():lower()
@@ -2675,7 +2720,8 @@ function onSearchTextChange(text)
 	end
   end
 
-function onClearSearchText()
+function onClearSearchText(widget)
+	local window = widget:getParent():getParent()
 	local search = window:recursiveGetChildById('searchText')
   search:setText('')
 end
@@ -2882,10 +2928,10 @@ local function renderSlotOnWidget(widget, slotData, isMainButton)
 	elseif slotData["chatText"] then
 		local spellData, param = Spells.getSpellDataByParamWords(slotData["chatText"]:lower())
 		if spellData then
-			local spellId = spellData.clientId
+			local spellId = SpellIcons[spellData.icon] and SpellIcons[spellData.icon][1] or spellData.clientId
 			if spellId and SpelllistSettings then
-				local source = SpelllistSettings['Default'].iconFile
-				local clip = Spells.getImageClip(spellId, 'Default')
+				local source = SpelllistSettings['Default'].iconsFolder
+				local clip = Spells.getImageClipNormal(spellId, 'Default')
 				widget.item.text:setText("")
 				widget.item.text:setImageSource(source)
 				widget.item.text:setImageClip(clip)
@@ -2996,7 +3042,7 @@ function getMultiActionPosition(button)
 	local pos = button:getPosition()
 	local x, y = pos.x, pos.y
 	if barN >= 1 and barN <= 3 then
-		return topoint(string.format("%s %s", x - 29, y - 130))
+		return topoint(string.format("%s %s", x - 20, y - 116))
 	elseif barN >= 4 and barN <= 6 then
 		return topoint(string.format("%s %s", x + 34, y - 29))
 	else
