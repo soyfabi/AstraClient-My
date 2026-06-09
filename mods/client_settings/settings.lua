@@ -149,6 +149,23 @@ function init()
 
   addEvent(function() setup() end)
 
+  ProtocolGame.registerExtendedOpcode(0x8C, function(protocol, opcode, buffer)
+    print("[DEBUG-ICONS] 0x8C rx len=" .. #buffer)
+    if #buffer >= 8 then
+      -- read uint64 from raw bytes (little-endian)
+      local lo = string.byte(buffer, 1) + string.byte(buffer, 2) * 256 +
+                string.byte(buffer, 3) * 65536 + string.byte(buffer, 4) * 16777216
+      local hi = string.byte(buffer, 5) + string.byte(buffer, 6) * 256 +
+                string.byte(buffer, 7) * 65536 + string.byte(buffer, 8) * 16777216
+      local highStates = lo + hi * 4294967296
+      local player = g_game.getLocalPlayer()
+      if player and highStates ~= 0 then
+        local combined = player:getStates() + highStates
+        ConditionsHUD:notifierStatesChange(player, combined, 0, player:getStatesList(), {})
+      end
+    end
+  end)
+
   connect(g_game,
           { onGameStart = online,
             onGameEnd = offline,
@@ -183,6 +200,7 @@ function terminate()
             )
 
   disconnect(LocalPlayer, { onTakeScreenshot = onScreenShot})
+  ProtocolGame.unregisterExtendedOpcode(0x8C)
   disconnect(LocalPlayer, { onStatesChange = onStatesChange,
                         onTaintsChange = onTaintsChange,
                          onSoulChange = onSoulChange,
