@@ -369,8 +369,7 @@ local function setHealthCircleModules(value)
 end
 
 function toggleHotkeys()
-  m_settings:openOptions()
-  onClickOptionButton(loadedButton["controls"], "customHotkeys")
+  m_settings:openOptions("customHotkeys")
 end
 
 function toggleShortcuts()
@@ -400,11 +399,11 @@ function closeOptions()
   KeyBinds:setupAndReset(Options.currentHotkeySetName, (Options.isChatOnEnabled and "chatOn" or "chatOff"))
 end
 
-function openOptions()
+function openOptions(self, redirectId)
   optionsWindow:show(true)
   optionsWindow:focus()
   g_client.setInputLockWidget(optionsWindow)
-  onClickOptionButton(loadedButton["controls"])
+  onClickOptionButton(loadedButton["controls"], redirectId)
 end
 
 function setup()
@@ -452,7 +451,9 @@ function onClickOptionButton(widget, redirectId)
 
   widget.button:setOn(true)
   selectedWindow = loadedWindows[widget:getId()]
-  selectedWindow:show(true)
+  if not redirectId then
+    selectedWindow:show(true)
+  end
 
   if selectedWindow.children then
     selectedButton:setHeight(20 * (#selectedWindow.children + 1))
@@ -469,9 +470,7 @@ function onClickOptionButton(widget, redirectId)
         end
 
         if redirectId and redirectId == option.id then
-          scheduleEvent(function()
-            onClickChildOptionButton(widget)
-          end, 100)
+          onClickChildOptionButton(widget)
         end
       end
     end
