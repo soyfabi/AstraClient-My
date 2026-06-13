@@ -4797,10 +4797,20 @@ void ProtocolGame::parseTaskBoardBountyData(const InputMessagePtr& msg)
         const uint8_t canUpgrade = msg->getU8();
         const uint16_t upgradeCost = msg->getU16();
 
-        // Compute display values: base 50 per level (100 for beastiary index 3)
-        const uint16_t bonusPerLevel = i == 3 ? 100 : 50;
-        const uint16_t currentValue = static_cast<uint16_t>(currentLevel) * bonusPerLevel;
-        const uint16_t nextValue = canUpgrade ? currentValue + bonusPerLevel : 0;
+        const auto getTalismanBonus = [](const uint8_t level, const uint8_t path) -> uint16_t {
+            if (level == 0)
+                return 0;
+            if (path == 3) {
+                if (level <= 20)
+                    return static_cast<uint16_t>(level) * 100;
+                return static_cast<uint16_t>(2000 + (level - 20) * 50);
+            }
+            if (level <= 26)
+                return static_cast<uint16_t>(250 + (level - 1) * 50);
+            return static_cast<uint16_t>(1500 + (level - 26) * 25);
+        };
+        const uint16_t currentValue = getTalismanBonus(currentLevel, i);
+        const uint16_t nextValue = canUpgrade ? getTalismanBonus(currentLevel + 1, i) : 0;
 
         entry["currentValue"] = stringify(currentValue);
         entry["nextValue"] = stringify(nextValue);
@@ -4825,6 +4835,25 @@ void ProtocolGame::parseTaskBoardBountyData(const InputMessagePtr& msg)
             entry["unwantedRaceId"] = "0";
         }
         preferreds.emplace_back(std::move(entry));
+    }
+
+    constexpr uint64_t bountyExtensionMarker = 0x5441534B424F4152ULL;
+    if (msg->getUnreadSize() >= 12 && msg->peekU64() == bountyExtensionMarker) {
+        msg->getU64();
+        const uint16_t preferredClearCost = msg->getU16();
+        const uint16_t availableCreatureCount = msg->getU16();
+        std::vector<std::map<std::string, std::string>> availableCreatures;
+        availableCreatures.reserve(availableCreatureCount);
+        for (uint16_t i = 0; i < availableCreatureCount; ++i) {
+            std::map<std::string, std::string> entry;
+            entry["raceId"] = stringify(msg->getU16());
+            readTaskCreatureDisplay(msg, entry);
+            availableCreatures.emplace_back(std::move(entry));
+        }
+
+        g_lua.callGlobalField("g_game", "onBountyTaskData", header, monsters, talisman, preferreds,
+                              availableCreatures, preferredClearCost);
+        return;
     }
 
     g_lua.callGlobalField("g_game", "onBountyTaskData", header, monsters, talisman, preferreds);

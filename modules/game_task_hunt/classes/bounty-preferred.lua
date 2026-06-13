@@ -114,9 +114,11 @@ function BountyPreferred.terminate()
 end
 
 function BountyPreferred.onServerData(slots, removeCost, availableRaceIds)
-    cachedSlots = slots
+    cachedSlots = slots or {}
     cachedRemoveCost = removeCost
-    cachedAvailableRaceIds = availableRaceIds
+    if availableRaceIds ~= nil then
+        cachedAvailableRaceIds = availableRaceIds
+    end
 
     if preferredWindow and preferredWindow:isVisible() then
         BountyPreferred.populateMonsterList()
@@ -192,7 +194,7 @@ function BountyPreferred.populateMonsterList()
             local creature = row:recursiveGetChildById('creature')
             if creature and monsterData.raceData and monsterData.raceData.outfit then
                 creature:setOutfit(monsterData.raceData.outfit)
-                creature:getCreature():setStaticWalking(1000)
+                creature:setStaticWalking(true)
                 creature:setTooltip(monsterData.name)
                 creature:setPhantom(false)
             end
@@ -241,7 +243,17 @@ end
 -- ─── Right panel: Slots ───────────────────────────────────────────────
 
 function BountyPreferred.populateSlots()
-    if not preferredWindow then return end
+    if not preferredWindow or not preferredWindow:isVisible() then return end
+
+    local nextLockedSlot = nil
+    local nextLockedPrice = 0
+    for _, slotData in ipairs(cachedSlots) do
+        if tonumber(slotData.locked) == 1 then
+            nextLockedSlot = tonumber(slotData.slot) or 0
+            nextLockedPrice = tonumber(slotData.price) or 0
+            break
+        end
+    end
 
     for _, slotData in ipairs(cachedSlots) do
         local slotNum = tonumber(slotData.slot) or 0
@@ -267,14 +279,19 @@ function BountyPreferred.populateSlots()
 
                 local unlockBtn = lockedContainer:recursiveGetChildById('unlockBtn')
                 if unlockBtn then
-                    unlockBtn.onClick = function()
-                        g_game.bountyPreferredAction(ACTION_BUY_SLOT, 0, 0)
+                    local isNextLockedSlot = slotNum == nextLockedSlot
+                    unlockBtn.onClick = nil
+                    if isNextLockedSlot then
+                        local slotToUnlock = nextLockedSlot
+                        unlockBtn.onClick = function()
+                            g_game.bountyPreferredAction(ACTION_BUY_SLOT, slotToUnlock, 0)
+                        end
                     end
 
                     -- Disable unlock button if player lacks bounty task points
                     local player = g_game.getLocalPlayer()
                     local balance = player and player:getResourceBalance(ResourceTypes.BOUNTY_TASK_POINTS) or 0
-                    unlockBtn:setEnabled(balance >= price)
+                    unlockBtn:setEnabled(isNextLockedSlot and balance >= nextLockedPrice)
                 end
 
                 local costLabel = lockedContainer:recursiveGetChildById('unlockCostLabel')

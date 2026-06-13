@@ -28,6 +28,33 @@ local tabConfig = {
     }
 }
 
+local function syncResourceBalances()
+    local player = g_game.getLocalPlayer()
+    if not player or not ResourceTypes then return end
+
+    onResourceBalance(ResourceTypes.TASK_HUNTING,
+        player:getResourceBalance(ResourceTypes.TASK_HUNTING))
+    onResourceBalance(ResourceTypes.BOUNTY_TASK_POINTS,
+        player:getResourceBalance(ResourceTypes.BOUNTY_TASK_POINTS))
+    onResourceBalance(ResourceTypes.SOULSEAL_POINTS,
+        player:getResourceBalance(ResourceTypes.SOULSEAL_POINTS))
+end
+
+function openTaskHuntStoreSearch(searchText)
+    if not modules.game_store or not modules.game_store.showStoreWindow or not g_game.requestStoreOffers then
+        return
+    end
+
+    modules.game_store.showStoreWindow()
+    g_game.requestStoreOffers(5, searchText, 0)
+end
+
+function refreshTrackerData()
+    if TaskBounty and TaskBounty.refreshTracker then
+        TaskBounty.refreshTracker()
+    end
+end
+
 function init()
     g_ui.importStyle('styles/bounty-tasks')
     g_ui.importStyle('styles/bounty-preferred')
@@ -106,6 +133,10 @@ function init()
         onBountyPreferredData = BountyPreferred.onServerData,
         onGameEnd = hide,
     })
+
+    if g_game.isOnline() then
+        scheduleEvent(syncResourceBalances, 0)
+    end
 end
 
 function terminate()
@@ -140,6 +171,7 @@ end
 
 function show()
     if not taskHuntWindow then return end
+    syncResourceBalances()
     taskHuntWindow:show()
     taskHuntWindow:raise()
     taskHuntWindow:focus()
@@ -238,6 +270,7 @@ function onResourceBalance(resourceType, balance)
             local label = panel:recursiveGetChildById('panelLabel')
             if label then label:setText(comma_value(balance)) end
         end
+        BountyPreferred.populateSlots()
     end
 
     if resourceType == ResourceTypes.BOUNTY_REROLL_POINTS then
