@@ -1,3 +1,9 @@
+local function setHealthManaCircleVisible(value)
+    if modules.client_settings and modules.client_settings.setHealthCircleModules then
+        modules.client_settings.setHealthCircleModules(value)
+    end
+end
+
 return {
     layout = {
         value = DEFAULT_LAYOUT,
@@ -799,12 +805,7 @@ return {
 	showHealthManaCircle = {
     value = false,
     apply = function(value)
-        local gameMapPanel = m_interface.getMapPanel()
-        gameMapPanel:setShowArcs(value)
-        if modules.game_healthcircle then
-            modules.game_healthcircle.setHealthCircle(value)
-            modules.game_healthcircle.setManaCircle(value)
-        end
+        setHealthManaCircleVisible(value)
         return true
     end,
     tempApply = function(value)
@@ -830,12 +831,7 @@ return {
                 end
             end
         end
-        local gameMapPanel = m_interface.getMapPanel()
-        gameMapPanel:setShowArcs(value)
-        if modules.game_healthcircle then
-            modules.game_healthcircle.setHealthCircle(value)
-            modules.game_healthcircle.setManaCircle(value)
-        end
+        setHealthManaCircleVisible(value)
         return true
     end
   },
@@ -1843,7 +1839,13 @@ return {
 	customisableBars = {
 		value = true,
         apply = function(value)
-            modules.game_topbar.toggle(value)
+            if modules.game_topbar then
+                if modules.game_topbar.reloadFromSettings then
+                    modules.game_topbar.reloadFromSettings(value)
+                elseif modules.game_topbar.toggle then
+                    modules.game_topbar.toggle(value)
+                end
+            end
             return true
         end,
 	},
