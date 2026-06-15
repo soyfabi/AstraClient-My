@@ -303,7 +303,7 @@ return {
 	},
 
 	ambientLight = {
-		value = 100,
+		value = 40,
         apply = function(value)
             local gameMapPanel = m_interface.getMapPanel()
             gameMapPanel:setMinimumAmbientLight(value/100)
@@ -1854,7 +1854,7 @@ return {
 	},
 
 	enableLights = {
-		value = false,
+		value = true,
         apply = function(value)
             local effects = GameOptions:getLoadedWindow('effects')
             local wid = effects:recursiveGetChildById('ambientLabel')
