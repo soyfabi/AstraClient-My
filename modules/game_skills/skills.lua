@@ -1060,8 +1060,23 @@ function onTemporaryBonusChange(localPlayer, bonus, endTime)
 end
 
 function onBoostClick()
-	g_game.openStore()
-	g_game.requestStoreOffers(1, "", 1)
+  instantlyBuyBoost()
+end
+
+local function getXpBoostStoreOffer()
+  if not g_game.getStoreOfferBySubtype then
+    return nil
+  end
+  return g_game.getStoreOfferBySubtype("expboost") or g_game.getStoreOfferBySubtype("xpboost")
+end
+
+local function getXpBoostPurchaseData()
+  local offer = getXpBoostStoreOffer()
+  local selectedOffer = offer and offer.offers and offer.offers[1]
+  if not offer or not offer.id or not selectedOffer or not selectedOffer.price then
+    return nil
+  end
+  return offer.id, selectedOffer.price
 end
 
 function onUpdateGainRate(localPlayer, baseRate, lowLevelBonus, expBoost, staminaMulti)
@@ -1123,12 +1138,18 @@ function onUpdateGainRate(localPlayer, baseRate, lowLevelBonus, expBoost, stamin
 end
 
 function instantlyBuyBoost()
-  local xpBoostOfferId = 65583
-  local xpBoostPrice = nil
+  local offerId, price = getXpBoostPurchaseData()
+  if not offerId then
+    if g_game.openStore then
+      g_game.openStore()
+    end
+    displayErrorBox(tr('Warning'), tr('XP boost offer is not loaded. Open the Store and try again.'))
+    return
+  end
 
   local yesCallback = function()
     if confirmBoostWindow then
-      g_game.buyStoreOffer(xpBoostOfferId, 1, "")
+      g_game.buyStoreOffer(offerId, OFFER_BUY_TYPE_OTHERS or 0, "")
       confirmBoostWindow:destroy()
     end
   end
@@ -1139,8 +1160,8 @@ function instantlyBuyBoost()
     end
   end
 
-  local message = tr("Do you want to buy a XP boost for %s Astra Coins?", xpBoostPrice)
-  confirmBoostWindow = displayGeneralBox(tr('Warning'), tr(message), {
+  local message = tr("Do you want to buy an XP boost for %s Astra Coins?", price)
+  confirmBoostWindow = displayGeneralBox(tr('Warning'), message, {
     { text=tr('Yes'), callback=yesCallback },
     { text=tr('No'), callback=noCallback },
   }, yesCallback, noCallback)
