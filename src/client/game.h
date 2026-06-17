@@ -435,6 +435,7 @@ public:
 
     void setMaxPreWalkingSteps(uint value) { m_maxPreWalkingSteps = value; }
     uint getMaxPreWalkingSteps() { return m_maxPreWalkingSteps; }
+    void cancelWalkQueue();
 
     void showRealDirection(bool value) { m_showRealDirection = value; }
     bool shouldShowingRealDirection() { return m_showRealDirection; }

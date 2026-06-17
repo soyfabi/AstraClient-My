@@ -877,6 +877,15 @@ bool Game::walk(Otc::Direction direction, bool isKeyDown)
     return true;
 }
 
+void Game::cancelWalkQueue()
+{
+    if (m_walkEvent) {
+        m_walkEvent->cancel();
+        m_walkEvent = nullptr;
+    }
+    m_nextScheduledDir = Otc::InvalidDirection;
+}
+
 void Game::turn(Otc::Direction direction)
 {
     m_denyBotCall = false;
@@ -885,11 +894,7 @@ void Game::turn(Otc::Direction direction)
         return;
     }
 
-    if (m_walkEvent) {
-        m_walkEvent->cancel();
-        m_walkEvent = nullptr;
-    }
-    m_nextScheduledDir = Otc::InvalidDirection;
+    cancelWalkQueue();
 
     switch(direction) {
     case Otc::North:

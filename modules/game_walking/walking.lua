@@ -365,6 +365,8 @@ function changeWalkDir(dir, pop)
   if pop then
     if #smartWalkDirs == 0 then
       stopSmartWalk()
+      nextWalkDir = nil
+      g_game.cancelWalkQueue()
       return
     end
   else
