@@ -885,21 +885,27 @@ void Game::turn(Otc::Direction direction)
         return;
     }
 
-    if (g_game.getFeature(Otc::GameNewWalking)) {
-        m_localPlayer->setDirection(direction);
+    if (m_walkEvent) {
+        m_walkEvent->cancel();
+        m_walkEvent = nullptr;
     }
+    m_nextScheduledDir = Otc::InvalidDirection;
 
     switch(direction) {
     case Otc::North:
+        m_localPlayer->setDirection(direction);
         m_protocolGame->sendTurnNorth();
         break;
     case Otc::East:
+        m_localPlayer->setDirection(direction);
         m_protocolGame->sendTurnEast();
         break;
     case Otc::South:
+        m_localPlayer->setDirection(direction);
         m_protocolGame->sendTurnSouth();
         break;
     case Otc::West:
+        m_localPlayer->setDirection(direction);
         m_protocolGame->sendTurnWest();
         break;
     default:

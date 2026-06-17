@@ -21,6 +21,8 @@ walkFirstStepDelay = 50
 walkTurnDelay = 0
 walkCtrlTurnDelay = 0
 
+local FastTurnRepeatDelay = 25
+
 local data = {
   ["ctrlCheckBox"] = {"Ctrl"},
   ["shiftCheckBox"] = {"Shift"},
@@ -507,15 +509,11 @@ function turn(dir, repeated)
 
   removeEvent(walkEvent)
 
-  if not repeated or lastTurn + 100 < g_clock.millis() then
+  if not repeated or lastTurn + FastTurnRepeatDelay < g_clock.millis() then
     g_game.turn(dir)
-    changeWalkDir(dir)
+    smartWalkDir = dir
 
     lastTurn = g_clock.millis()
-
-    if not repeated then
-      lastTurn = g_clock.millis() + 50
-    end
 
     lastTurnDirection = dir
     nextWalkDir = nil
