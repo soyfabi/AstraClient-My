@@ -178,7 +178,7 @@ public:
     void safeLogout();
 
     // walk related
-    void walk(Otc::Direction direction, bool withPreWalk);
+    bool walk(Otc::Direction direction, bool isKeyDown = false);
     void autoWalk(const std::vector<Otc::Direction>& dirs, Position startPos);
     void turn(Otc::Direction direction);
     void stop();
@@ -496,6 +496,8 @@ private:
     Otc::ChaseModes m_chaseMode;
     Otc::PVPModes m_pvpMode;
     Otc::Direction m_lastWalkDir;
+    Otc::Direction m_nextScheduledDir = Otc::InvalidDirection;
+    ScheduledEventPtr m_walkEvent;
     bool m_waitingForAnotherDir = false;
     UnjustifiedPoints m_unjustifiedPoints;
     int m_openPvpSituations;
