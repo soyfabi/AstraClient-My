@@ -46,6 +46,8 @@ Game g_game;
 
 namespace {
 
+constexpr int MaxScheduledWalkTicks = 2000;
+
 bool validateTaskBoardParam(const char* action, const char* field, int value, int maxValue)
 {
     if (value < 0 || value > maxValue) {
@@ -746,7 +748,7 @@ bool Game::walk(Otc::Direction direction, bool isKeyDown)
 
     if (!m_localPlayer->canWalk(direction)) {
         if (m_nextScheduledDir != direction || !m_walkEvent) {
-            const int ticks = std::clamp<int>(m_localPlayer->getStepTicksLeft(), 1, 2000);
+            const int ticks = std::clamp<int>(m_localPlayer->getStepTicksLeft(), 1, MaxScheduledWalkTicks);
             const int lateQueueWindow = std::min<int>(std::max<int>(m_localPlayer->getStepDuration() / 3, 1), 250);
             if (isKeyDown || ticks <= lateQueueWindow) {
                 if (m_walkEvent) {
