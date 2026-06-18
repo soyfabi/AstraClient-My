@@ -748,9 +748,9 @@ bool Game::walk(Otc::Direction direction, bool isKeyDown)
 
     if (!m_localPlayer->canWalk(direction)) {
         if (m_nextScheduledDir != direction || !m_walkEvent) {
-            const int ticks = std::clamp<int>(m_localPlayer->getStepTicksLeft(), 1, MaxScheduledWalkTicks);
-            const int lateQueueWindow = std::min<int>(std::max<int>(m_localPlayer->getStepDuration() / 3, 1), 250);
-            if (isKeyDown || ticks <= lateQueueWindow) {
+            const int ticksLeft = m_localPlayer->getStepTicksLeft();
+            const int ticks = std::clamp<int>(ticksLeft, 1, MaxScheduledWalkTicks);
+            if (isKeyDown || ticksLeft <= MaxScheduledWalkTicks) {
                 if (m_walkEvent) {
                     m_walkEvent->cancel();
                     m_walkEvent = nullptr;

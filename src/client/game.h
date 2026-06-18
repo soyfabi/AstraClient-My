@@ -433,7 +433,7 @@ public:
         return m_transferableCoins;
     }
 
-    void setMaxPreWalkingSteps(uint value) { m_maxPreWalkingSteps = value; }
+    void setMaxPreWalkingSteps(uint) { m_maxPreWalkingSteps = 1; }
     uint getMaxPreWalkingSteps() { return m_maxPreWalkingSteps; }
     void cancelWalkQueue();
 
@@ -487,7 +487,7 @@ private:
     uint m_pingReceived;
     uint m_walkId = 0;
     uint m_walkPrediction = 0;
-    uint m_maxPreWalkingSteps = 2;
+    uint m_maxPreWalkingSteps = 1;
     stdext::timer m_pingTimer;
     std::map<uint32_t, stdext::timer> m_newPingIds;
     uint m_seq;

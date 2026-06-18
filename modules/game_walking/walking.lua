@@ -100,7 +100,6 @@ local function migrateSmoothWalkDefaults()
 
   if g_settings.getBoolean("astraDirectWalkDefaultsV2") and g_settings.getNumber("hotkeyDelay") == 5 then
     g_settings.set("hotkeyDelay", 50)
-    g_settings.set("dash", false)
   end
 
   g_settings.set("astraSmoothWalkDefaultsV3", true)
@@ -113,7 +112,7 @@ local function applyDirectWalkRuntimeOptions()
     gameRootPanel:setAutoRepeatDelay(delay)
   end
 
-  g_game.setMaxPreWalkingSteps(g_settings.getBoolean("dash") and 2 or 1)
+  g_game.setMaxPreWalkingSteps(1)
 end
 
 function setWalkDelayOption(key, value)
@@ -358,9 +357,12 @@ end
 function stopSmartWalk()
   smartWalkDirs = {}
   smartWalkDir = nil
+  nextWalkDir = nil
+  g_game.cancelWalkQueue()
 end
 
 function changeWalkDir(dir, pop)
+  g_game.cancelWalkQueue()
   while table.removevalue(smartWalkDirs, dir) do end
   if pop then
     if #smartWalkDirs == 0 then
@@ -391,6 +393,8 @@ function changeWalkDir(dir, pop)
       end
     end
   end
+
+  nextWalkDir = smartWalkDir
 end
 
 function smartWalk(dir, ticks)
@@ -439,6 +443,7 @@ function onTeleport(player, newPos, oldPos)
   walkLock = delay > 0 and g_clock.millis() + delay or 0
 
   nextWalkDir = nil
+  g_game.cancelWalkQueue()
 end
 
 function onWalkFinish(player)
@@ -450,6 +455,8 @@ function onWalkFinish(player)
 end
 
 function onCancelWalk(player)
+  nextWalkDir = nil
+  g_game.cancelWalkQueue()
   player:lockWalk(50)
 end
 
@@ -482,14 +489,19 @@ function walk(dir, ticks)
   local firstStepDelay = g_settings.getNumber("walkFirstStepDelay")
   firstStep = not player:isWalking() and lastFinishedStep + firstStepDelay < now and walkLock + firstStepDelay < now
 
-  nextWalkDir = nil
-
   removeEvent(autoWalkEvent)
   autoWalkEvent = nil
 
   if not g_game.walk(dir, true) then
+    if player:isWalking() or player:isPreWalking() or player:isServerWalking() then
+      nextWalkDir = dir
+    else
+      nextWalkDir = nil
+    end
     return false
   end
+
+  nextWalkDir = nil
 
   local turnDelay = g_settings.getNumber("walkTurnDelay")
   if turnDelay > 0 and not firstStep and lastWalkDir ~= dir then
