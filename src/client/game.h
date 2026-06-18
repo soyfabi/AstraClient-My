@@ -433,6 +433,7 @@ public:
         return m_transferableCoins;
     }
 
+    // Dash/prewalk booster was removed; keep Lua compatibility but force precision walking.
     void setMaxPreWalkingSteps(uint) { m_maxPreWalkingSteps = 1; }
     uint getMaxPreWalkingSteps() { return m_maxPreWalkingSteps; }
     void cancelWalkQueue();
