@@ -21,7 +21,7 @@ walkFirstStepDelay = 50
 walkTurnDelay = 0
 walkCtrlTurnDelay = 0
 
-local FastTurnRepeatDelay = 25
+local FastTurnRepeatDelay = 50
 
 local data = {
   ["ctrlCheckBox"] = {"Ctrl"},
@@ -362,13 +362,10 @@ function stopSmartWalk()
 end
 
 function changeWalkDir(dir, pop)
-  g_game.cancelWalkQueue()
   while table.removevalue(smartWalkDirs, dir) do end
   if pop then
     if #smartWalkDirs == 0 then
       stopSmartWalk()
-      nextWalkDir = nil
-      g_game.cancelWalkQueue()
       return
     end
   else
@@ -395,6 +392,7 @@ function changeWalkDir(dir, pop)
   end
 
   nextWalkDir = smartWalkDir
+  g_game.cancelWalkQueue()
 end
 
 function smartWalk(dir, ticks)
