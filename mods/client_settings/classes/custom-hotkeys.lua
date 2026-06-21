@@ -432,7 +432,7 @@ function CustomHotkeys.assignItem(button, itemId, itemTier)
       end
 		end
 
-		if (i == 5 and item:getClothSlot() > 0) or (i == 5 and item:getClothSlot() == 0 and (item:getClassification() > 0 or item:isAmmo() or modules.game_actionbar.getSmartCast(item:getId()))) then
+		if i == 5 and canAssignEquipItem(item) then
 			child:setEnabled(true)
       if not radio:getSelectedWidget() then
 			  radio:selectWidget(child)

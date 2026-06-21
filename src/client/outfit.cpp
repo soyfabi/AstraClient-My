@@ -97,13 +97,21 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
                 animationPhase = idleAnimator->getPhase();
             }
         } else if (type->isAnimateAlways() || ui) {
-            int phases = type->getAnimator() ? type->getAnimator()->getAnimationPhases() : type->getAnimationPhases();
-            if (ui && phases < 4) {
-                phases = 2; // old protocols with 2 frames walk animation
+            const auto animator = type->getAnimator();
+            if (ui && animator && type->isAnimateAlways()) {
+                animationPhase = animator->getPhase();
+            } else {
+                int phases = animator ? animator->getAnimationPhases() : type->getAnimationPhases();
+                phases = std::max<int>(1, phases);
+                if (ui && !type->isAnimateAlways() && phases < 4) {
+                    phases = 2; // old protocols with 2 frames walk animation
+                }
+                int ticksPerFrame = ui && !type->isAnimateAlways() ?
+                                       (g_game.getFeature(Otc::GameEnhancedAnimations) ? Otc::ITEM_TICKS_PER_FRAME_FAST : UI_CREATURE_TICKS_PER_FRAME) :
+                                       (!g_game.getFeature(Otc::GameEnhancedAnimations) ? 333 : (1000 / phases));
+                ticksPerFrame = std::max<int>(1, ticksPerFrame);
+                animationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
             }
-            int ticksPerFrame = ui ? UI_CREATURE_TICKS_PER_FRAME
-                                   : (!g_game.getFeature(Otc::GameEnhancedAnimations) ? 333 : (1000 / phases));
-            animationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
             if (idleAnimator && ui) {
                 animationPhase += idleAnimator->getAnimationPhases() - 1;
             }
@@ -113,6 +121,10 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
         }
         if (g_game.getFeature(Otc::GameWingOffset) && m_wings) {
             wingBounce();
+        }
+        const int animationPhases = type->getAnimationPhases();
+        if (animationPhases > 0) {
+            animationPhase = std::max<int>(0, std::min<int>(animationPhase, animationPhases - 1));
         }
     } else if (animate) {
         int animationPhases = type->getAnimationPhases();
@@ -135,7 +147,7 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
             int mountAnimationPhase = walkAnimationPhase;
             auto mountType = g_things.rawGetThingType(m_mount, ThingCategoryCreature);
             auto idleAnimator = mountType->getIdleAnimator();
-            if (idleAnimator && animate) {
+            if (idleAnimator && animate && !ui) {
                 if (walkAnimationPhase > 0) {
                     mountAnimationPhase += idleAnimator->getAnimationPhases() - 1;
                 } else {
@@ -143,9 +155,21 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
                 }
             }
             else if (ui && animate) {
-                int phases = mountType->getAnimator() ? mountType->getAnimator()->getAnimationPhases() : mountType->getAnimationPhases();
-                int ticksPerFrame = UI_CREATURE_TICKS_PER_FRAME;
-                mountAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
+                const auto animator = mountType->getAnimator();
+                if (animator && mountType->isAnimateAlways()) {
+                    mountAnimationPhase = animator->getPhase();
+                } else {
+                    int phases = animator ? animator->getAnimationPhases() : mountType->getAnimationPhases();
+                    phases = std::max<int>(1, phases);
+                    int ticksPerFrame = !mountType->isAnimateAlways() ?
+                                       (g_game.getFeature(Otc::GameEnhancedAnimations) ? Otc::ITEM_TICKS_PER_FRAME_FAST : UI_CREATURE_TICKS_PER_FRAME) :
+                                       (!g_game.getFeature(Otc::GameEnhancedAnimations) ? 333 : (1000 / phases));
+                    ticksPerFrame = std::max<int>(1, ticksPerFrame);
+                    mountAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
+                }
+                if (idleAnimator) {
+                    mountAnimationPhase += idleAnimator->getAnimationPhases() - 1;
+                }
                 if (!mountType->isAnimateAlways()) {
                     mountAnimationPhase += 1;
                 }
@@ -157,6 +181,11 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
                 else {
                     mountAnimationPhase = 0;
                 }
+            }
+
+            const int mountAnimationPhases = mountType->getAnimationPhases();
+            if (mountAnimationPhases > 0) {
+                mountAnimationPhase = std::max<int>(0, std::min<int>(mountAnimationPhase, mountAnimationPhases - 1));
             }
 
             dest -= mountType->getDisplacement() * g_sprites.getOffsetFactor();
@@ -193,7 +222,9 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
                 }
             } else if (wingsType->isAnimateAlways()) {
                 int phases = wingsType->getAnimator() ? wingsType->getAnimator()->getAnimationPhases() : wingsType->getAnimationPhases();
+                phases = std::max<int>(1, phases);
                 int ticksPerFrame = 1000 / phases;
+                ticksPerFrame = std::max<int>(1, ticksPerFrame);
                 wingAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
             }
         }
@@ -209,14 +240,17 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
         if (animate) {
             if (auraType->isAnimateAlways()) {
                 int phases = auraType->getAnimator() ? auraType->getAnimator()->getAnimationPhases() : auraType->getAnimationPhases();
+                phases = std::max<int>(1, phases);
                 int ticksPerFrame = 1000 / phases;
+                ticksPerFrame = std::max<int>(1, ticksPerFrame);
                 auraAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
             }
             else if (auraAnimator) {
                 auraAnimationPhase = auraAnimator->getPhase();
             }
             else {
-                auraAnimationPhase = (stdext::millis() / 75) % auraType->getAnimationPhases();
+                const int phases = std::max<int>(1, auraType->getAnimationPhases());
+                auraAnimationPhase = (stdext::millis() / 75) % phases;
             }
         }
         auraType->draw(auraDest, 0, direction, 0, auraZPattern, auraAnimationPhase, Color::white, lightView);
@@ -230,14 +264,17 @@ void Outfit::draw(Point dest, Otc::Direction direction, uint walkAnimationPhase,
         if (animate) {
             if (auraType->isAnimateAlways()) {
                 int phases = auraType->getAnimator() ? auraType->getAnimator()->getAnimationPhases() : auraType->getAnimationPhases();
+                phases = std::max<int>(1, phases);
                 int ticksPerFrame = 1000 / phases;
+                ticksPerFrame = std::max<int>(1, ticksPerFrame);
                 auraAnimationPhase = (g_clock.millis() % (ticksPerFrame * phases)) / ticksPerFrame;
             }
             else if (auraAnimator) {
                 auraAnimationPhase = auraAnimator->getPhase();
             }
             else {
-                auraAnimationPhase = (stdext::millis() / 75) % auraType->getAnimationPhases();
+                const int phases = std::max<int>(1, auraType->getAnimationPhases());
+                auraAnimationPhase = (stdext::millis() / 75) % phases;
             }
         }
         auraType->draw(topAuraDest, 1, direction, 0, 0, auraAnimationPhase, Color::white, lightView);
