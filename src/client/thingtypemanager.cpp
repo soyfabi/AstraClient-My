@@ -418,7 +418,11 @@ void ThingTypeManager::loadXml(const std::string& file)
 
             uint16 id = element->readType<uint16>("id");
             if(id != 0) {
-                std::vector<std::string> s_ids = stdext::split(element->Attribute("id"), ";");
+                std::string idAttr = element->Attribute("id");
+                if(idAttr.empty())
+                    continue;
+
+                std::vector<std::string> s_ids = stdext::split(idAttr, ";");
                 for(const std::string& s : s_ids) {
                     std::vector<int32> ids = stdext::split<int32>(s, "-");
                     if(ids.size() > 1) {
@@ -429,9 +433,14 @@ void ThingTypeManager::loadXml(const std::string& file)
                         parseItemType(atoi(s.c_str()), element);
                 }
             } else {
-                std::vector<int32> begin = stdext::split<int32>(element->Attribute("fromid"), ";");
-                std::vector<int32> end   = stdext::split<int32>(element->Attribute("toid"), ";");
-                if(begin[0] && begin.size() == end.size()) {
+                std::string fromIdAttr = element->Attribute("fromid");
+                std::string toIdAttr = element->Attribute("toid");
+                if(fromIdAttr.empty() || toIdAttr.empty())
+                    continue;
+
+                std::vector<int32> begin = stdext::split<int32>(fromIdAttr, ";");
+                std::vector<int32> end   = stdext::split<int32>(toIdAttr, ";");
+                if(!begin.empty() && begin[0] && begin.size() == end.size()) {
                     size_t size = begin.size();
                     for(size_t i = 0; i < size; ++i)
                         while(begin[i] <= end[i])
@@ -478,8 +487,9 @@ void ThingTypeManager::parseItemType(uint16 serverId, TiXmlElement* elem)
             continue;
 
         stdext::tolower(key);
-        if(key == "description")
+        if(key == "description") {
             itemType->setDesc(attrib->Attribute("value"));
+        }
         else if(key == "weapontype") {
             itemType->setCategory(ItemCategoryWeapon);
             std::string value = attrib->Attribute("value");
@@ -493,23 +503,24 @@ void ThingTypeManager::parseItemType(uint16 serverId, TiXmlElement* elem)
             itemType->setCategory(ItemCategoryCharges);
         else if(key == "slottype") {
             std::string value = attrib->Attribute("value");
-            if(!value.empty())
+            if(!value.empty()) {
                 applySlotPosition(itemType, value);
+            }
         }
         else if(key == "script") {
             std::string value = attrib->Attribute("value");
             if(!value.empty() && hasScriptToken(value, "moveevent")) {
                 for(TiXmlElement* subAttrib = attrib->FirstChildElement(); subAttrib; subAttrib = subAttrib->NextSiblingElement()) {
-                    std::string subKeyAttribute = subAttrib->Attribute("key");
-                    if(subKeyAttribute.empty())
+                    std::string subKey = subAttrib->Attribute("key");
+                    if(subKey.empty())
                         continue;
 
-                    std::string subKey = subKeyAttribute;
                     stdext::tolower(subKey);
                     if(subKey == "slot") {
                         std::string subValue = subAttrib->Attribute("value");
-                        if(!subValue.empty())
+                        if(!subValue.empty()) {
                             applySlotPosition(itemType, subValue);
+                        }
                     }
                 }
             }
