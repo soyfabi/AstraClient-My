@@ -34,7 +34,8 @@
 #include <framework/http/http.h>
 
 #if !defined(ANDROID)
-#include <boost/process.hpp>
+#define BOOST_PROCESS_VERSION 1
+#include <boost/process/v1.hpp>
 #endif
 
 #include <algorithm>
