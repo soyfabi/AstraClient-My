@@ -45,6 +45,25 @@ local function getRarityDefaultImageSource(widget)
   return widget.rarityDefaultImageSource
 end
 
+local function isRarityDisabledValue(value)
+  return value == false or value == 'false' or value == 0 or value == '0'
+end
+
+local function shouldDrawRarityOnWidget(widget)
+  local current = widget
+  while current do
+    if isRarityDisabledValue(current.drawRarity) then
+      return false
+    end
+    current = current.getParent and current:getParent() or nil
+  end
+  return true
+end
+
+function ItemsDatabase.shouldDrawRarity(widget)
+  return shouldDrawRarityOnWidget(widget)
+end
+
 local function isInventoryRarityWidget(widget)
   local current = widget
   while current do
@@ -234,7 +253,7 @@ local function refreshRarityWidget(widget)
     return
   end
 
-  if widget.getItem and widget.setImageSource then
+  if widget.getItem and widget.setImageSource and shouldDrawRarityOnWidget(widget) then
     local ok, item = pcall(function()
       return widget:getItem()
     end)
@@ -562,6 +581,14 @@ function ItemsDatabase.setRarityItem(widget, item, corner)
 
   local defaultImageSource = getRarityDefaultImageSource(widget)
   local defaultImageClip = defaultImageSource == '/images/ui/item66' and '0 0 66 66' or '0 0 34 34'
+
+  if not shouldDrawRarityOnWidget(widget) then
+    if widget.setImageClip then
+      widget:setImageClip(defaultImageClip)
+    end
+    widget:setImageSource(defaultImageSource or '')
+    return
+  end
 
   pcall(function()
     if isInventoryRarityWidget(widget) then

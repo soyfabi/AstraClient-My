@@ -1371,17 +1371,50 @@ end
 function processClassicControl(tile, menuPosition, mouseButton, autoWalkPos, lookThing, useThing, creatureThing, attackCreature, marking)
   local keyboardModifiers = g_keyboard.getModifiers()
   local config = m_settings.getOption("lootControl")
-  local useLoot = (config == 1 and mouseButton == MouseRightButton and not g_keyboard.isShiftPressed() and not g_keyboard.isCtrlPressed()) or (config == 2 and mouseButton == MouseRightButton and g_keyboard.isShiftPressed()) or (config == 3 and mouseButton == MouseLeftButton and not g_keyboard.isShiftPressed() and not g_keyboard.isCtrlPressed())
+  local isLootLeftClick = config == 3 and mouseButton == MouseLeftButton and keyboardModifiers == KeyboardNoModifier
+  local useLoot = (config == 1 and mouseButton == MouseRightButton and not g_keyboard.isShiftPressed() and not g_keyboard.isCtrlPressed()) or (config == 2 and mouseButton == MouseRightButton and g_keyboard.isShiftPressed()) or isLootLeftClick
 
-  if useThing and useLoot and (g_game.getFeature(GameQuickLootFlags) or g_game.getFeature(GameTibia12Protocol)) then
+  local function isItemThing(thing)
+    return thing and type(thing.isItem) == 'function' and thing:isItem()
+  end
+
+  local function hasThingMethod(thing, methodName)
+    return thing and type(thing[methodName]) == 'function'
+  end
+
+  local function isRootLootContainer(thing)
+    return isItemThing(thing) and
+      hasThingMethod(thing, 'isContainer') and
+      hasThingMethod(thing, 'isLyingCorpse') and
+      hasThingMethod(thing, 'getParentContainer') and
+      (thing:isContainer() or thing:isLyingCorpse()) and
+      not thing:getParentContainer()
+  end
+
+  local lootThing
+  if isLootLeftClick then
+    lootThing = isRootLootContainer(useThing) and useThing or nil
+    if not lootThing then
+      lootThing = isRootLootContainer(lookThing) and lookThing or nil
+    end
+  end
+
+  local quickLootThing = lootThing or useThing
+
+  if quickLootThing and useLoot and (g_game.getFeature(GameQuickLootFlags) or g_game.getFeature(GameTibia12Protocol)) then
     if creatureThing and not creatureThing:isPlayer() then
       goto next
     end
 
-    if ((useThing:isCorpse() and not useThing:isPlayerCorpse()) or mouseButton == MouseLeftButton and useThing:inCorpse()) then
-      g_game.quickLoot(useThing:getPosition(), useThing:getId(), useThing:getStackPos(true), true)
-      return
+    if isItemThing(quickLootThing) and ((quickLootThing:isCorpse() and not quickLootThing:isPlayerCorpse()) or mouseButton == MouseLeftButton and quickLootThing:inCorpse()) then
+      g_game.quickLoot(quickLootThing:getPosition(), quickLootThing:getId(), quickLootThing:getStackPos(true), true)
+      return true
     end
+  end
+
+  if isLootLeftClick and lootThing then
+    g_game.openContainer(lootThing)
+    return true
   end
 
   :: next ::
