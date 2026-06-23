@@ -19,6 +19,62 @@ local function setItemRarityFrame(widget, itemOrId)
   end
 end
 
+local function getCurrentLevelFromProgress(progress)
+  progress = tonumber(progress) or 0
+  return math.min(math.max(progress + 1, 1), 5)
+end
+
+local function normalizeBestiaryName(name)
+  return tostring(name or ""):gsub("^%s*(.-)%s*$", "%1"):lower()
+end
+
+local function getMonsterName(monster)
+  if not monster then
+    return ""
+  end
+  return monster.name or monster[1] or ""
+end
+
+local function findBestiaryRaceIdByName(name)
+  local normalizedName = normalizeBestiaryName(name)
+  if normalizedName == "" then
+    return nil
+  end
+
+  local monsters = getCyclopediaMonsterList and getCyclopediaMonsterList() or {}
+  for i = 1, #MonsterList do
+    local raceId = tonumber(MonsterList[i][1])
+    local monster = monsters[raceId]
+    if normalizeBestiaryName(getMonsterName(monster)) == normalizedName then
+      return raceId
+    end
+  end
+
+  for raceId, monster in pairs(monsters) do
+    if normalizeBestiaryName(getMonsterName(monster)) == normalizedName then
+      return tonumber(raceId)
+    end
+  end
+  return nil
+end
+
+local bestiaryMessageCallbacksRegistered = false
+local function getBestiaryMessageModes()
+  if not MessageModes then
+    return {}
+  end
+
+  return {
+    MessageModes.Game,
+    MessageModes.Status,
+    MessageModes.Blue,
+    MessageModes.Notification,
+    MessageModes.GameHighlight,
+    MessageModes.Login,
+    MessageModes.ChannelManagement
+  }
+end
+
 function Bestiary.reset()
   overviewPage = 1
   monsterListPage = 1
@@ -154,6 +210,93 @@ function Bestiary.updateBestiaryOverview(name, monsterList, masteryCount)
   MonsterList = monsterList
   MasteryCount = masteryCount
   Bestiary.bestiaryOverview()
+end
+
+function Bestiary.updateBestiaryProgress(monsterId, progress, killCounter, first, second, third)
+  monsterId = tonumber(monsterId) or 0
+  if monsterId <= 0 then
+    return
+  end
+
+  local currentLevel = getCurrentLevelFromProgress(progress)
+  local updatedOverview = false
+  for i = 1, #MonsterList do
+    if tonumber(MonsterList[i][1]) == monsterId then
+      MonsterList[i][2] = currentLevel
+      updatedOverview = true
+      break
+    end
+  end
+
+  if updatedOverview and VisibleCyclopediaPanel and VisibleCyclopediaPanel:getId() == 'bestiaryOverviewPanel' then
+    Bestiary.bestiaryOverview()
+  end
+
+  if BESTIARY_MONSTER_ID == monsterId and VisibleCyclopediaPanel and VisibleCyclopediaPanel:getId() == 'bestiaryMonsterPanel' then
+    g_game.bestiaryMonsterData(monsterId)
+  end
+end
+
+function Bestiary.updateBestiaryProgressByName(monsterName, progress)
+  local monsterId = findBestiaryRaceIdByName(monsterName)
+  if not monsterId then
+    return
+  end
+  Bestiary.updateBestiaryProgress(monsterId, progress)
+end
+
+function Bestiary.onTextMessage(mode, text)
+  if type(text) ~= 'string' then
+    return
+  end
+
+  local patterns = {
+    { pattern = "^You unlocked the Bestiary entry for (.+)%.$", progress = 0 },
+    { pattern = "^You unlocked the first Bestiary stage for (.+)%.$", progress = 1 },
+    { pattern = "^You unlocked the second Bestiary stage for (.+)%.$", progress = 2 },
+    { pattern = "^You completed the Bestiary entry for (.+) and earned .+ charm points%.$", progress = 3 }
+  }
+
+  for _, data in ipairs(patterns) do
+    local monsterName = text:match(data.pattern)
+    if monsterName then
+      Bestiary.updateBestiaryProgressByName(monsterName, data.progress)
+      return
+    end
+  end
+end
+
+function Bestiary.onClientEvent(eventType, monsterId, progress)
+  if tonumber(eventType) ~= 6 then
+    return
+  end
+  Bestiary.updateBestiaryProgress(monsterId, progress)
+end
+
+function Bestiary.registerMessageCallbacks()
+  if bestiaryMessageCallbacksRegistered or not registerMessageMode then
+    return
+  end
+
+  for _, messageMode in ipairs(getBestiaryMessageModes()) do
+    if messageMode then
+      registerMessageMode(messageMode, Bestiary.onTextMessage)
+    end
+  end
+  bestiaryMessageCallbacksRegistered = true
+end
+
+function Bestiary.unregisterMessageCallbacks()
+  if not bestiaryMessageCallbacksRegistered or not unregisterMessageMode then
+    return
+  end
+
+  for _, messageMode in ipairs(getBestiaryMessageModes()) do
+    if messageMode then
+      unregisterMessageMode(messageMode, Bestiary.onTextMessage)
+    end
+  end
+  bestiaryMessageCallbacksRegistered = false
 end
 
 function Bestiary.bestiaryOverview()

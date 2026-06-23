@@ -37,7 +37,7 @@ if not BattlePass then
 
     -- Common variables
     BattlePass.rewardMinMargin = 195
-    BattlePass.rewardMaxMargin = 18045
+    BattlePass.rewardMaxMargin = 28600
 end
 
 local BattlePassOpcode = {
@@ -50,17 +50,35 @@ local BattlePassRequest = {
     GetRewards = 2,
     Reroll = 3,
     Redeem = 4,
-    BuyPremium = 5
+    BuyPremium = 5,
+    GetShop = 6,
+    BuyShop = 7,
 }
 
 local BattlePassResponse = {
     Missions = 1,
     Rewards = 2,
-    Error = 3
+    Error = 3,
+    Shop = 4
 }
 
 local battlePassProtocolRegistered = false
 BattlePass.opcode = BattlePassOpcode.Request
+
+local battlePassTabs = {
+    challengesMenu = {
+        title = 'Challenges',
+        icon = '/images/game/battlepass/mainIcon1',
+    },
+    rewardsMenu = {
+        title = 'Rewards',
+        icon = '/images/game/battlepass/vip-reward-chest',
+    },
+    shopMenu = {
+        title = 'Battle Pass Shop',
+        icon = '/images/game/task_hunt/icon-huntingtaskshop',
+    },
+}
 
 local function getLoadedPlayerId()
     if not LoadedPlayer or not LoadedPlayer.isLoaded or not LoadedPlayer.getId or not LoadedPlayer:isLoaded() then
@@ -145,6 +163,10 @@ local function sendToServer(action, data)
         request = BattlePassRequest.Redeem
     elseif action == "buyPremium" or action == "buyDeluxe" or action == "purchasePremium" then
         request = BattlePassRequest.BuyPremium
+    elseif action == "getShop" then
+        request = BattlePassRequest.GetShop
+    elseif action == "buyShop" then
+        request = BattlePassRequest.BuyShop
     end
 
     if not request then
@@ -161,6 +183,8 @@ local function sendToServer(action, data)
         msg:addU16(tonumber(data.index) or 0)
         msg:addU32(tonumber(data.rewardId) or 0)
         msg:addU32(math.max(0, tonumber(data.objectId) or 0))
+    elseif request == BattlePassRequest.BuyShop then
+        msg:addU16(math.max(0, tonumber(data.shopId) or 0))
     end
 
     return sendBattlePassMessage(msg)
@@ -327,12 +351,36 @@ local function unregisterBattlePassProtocol()
     battlePassProtocolRegistered = false
 end
 
+local function setupBattlePassTabs()
+    local tabBar = BattlePass.window and BattlePass.window.mainPanel and BattlePass.window.mainPanel.optionsTabBar
+    if not tabBar then
+        return
+    end
+
+    for tabId, config in pairs(battlePassTabs) do
+        local button = tabBar:getChildById(tabId)
+        if button then
+            local icon = button:recursiveGetChildById('tabIcon')
+            if icon then
+                icon:setImageSource(config.icon)
+            end
+
+            local label = button:recursiveGetChildById('tabLabel')
+            if label then
+                label:setText(tr(config.title))
+            end
+        end
+    end
+end
+
 function BattlePass.init()
     BattlePass.window = g_ui.displayUI('battlepass')
     BattlePass.hide()
+    setupBattlePassTabs()
 
     BattlePass.missionPanel = BattlePass.window:recursiveGetChildById('missionPanel')
     BattlePass.progressPanel = BattlePass.window:recursiveGetChildById('progressPanel')
+    BattlePass.shopPanel = BattlePass.window:recursiveGetChildById('battlePassShopPanel')
     BattlePass.outfitWidget = BattlePass.window:recursiveGetChildById('playerOutfit')
     BattlePass.scrollBarWidget = BattlePass.window:recursiveGetChildById('progressPanelScrollBar')
 
@@ -369,6 +417,9 @@ function BattlePass.init()
 
     BattlePass.loadMenu('challengesMenu')
     onCreateRewardContainers()
+    if BattlePassShop then
+        BattlePassShop.init(BattlePass.shopPanel)
+    end
 
     registerBattlePassProtocol()
 
@@ -411,6 +462,10 @@ function BattlePass.terminate()
     if BattlePassRewards and BattlePassRewards.confirmRewardWindow then
         BattlePassRewards.confirmRewardWindow:destroy()
         BattlePassRewards.confirmRewardWindow = nil
+    end
+
+    if BattlePassShop then
+        BattlePassShop.terminate()
     end
 
     if BattlePass.window then
@@ -584,6 +639,34 @@ local function parseBattlePassMissions(msg)
     BattlePass.onBattlePassMissionsFromServer(data)
 end
 
+local function parseBattlePassShop(msg)
+    local data = {
+        shopPoints = msg:getU32(),
+        unlocked = readBool(msg),
+        entries = {},
+    }
+
+    local count = msg:getU16()
+    for _ = 1, count do
+        table.insert(data.entries, {
+            id = msg:getU16(),
+            title = msg:getString(),
+            description = msg:getString(),
+            price = msg:getU32(),
+            previewType = msg:getU8(),
+            repeatable = readBool(msg),
+            purchased = readBool(msg),
+            itemId = msg:getU16(),
+            lookType = msg:getU16(),
+            addons = msg:getU8(),
+        })
+    end
+
+    if BattlePassShop then
+        BattlePassShop.onShopData(data)
+    end
+end
+
 onBattlePassMessage = function(protocol, msg)
     local ok, err = pcall(function()
         local response = msg:getU8()
@@ -591,6 +674,8 @@ onBattlePassMessage = function(protocol, msg)
             parseBattlePassMissions(msg)
         elseif response == BattlePassResponse.Rewards then
             BattlePass.onBattlePassRewards(readRewardSteps(msg))
+        elseif response == BattlePassResponse.Shop then
+            parseBattlePassShop(msg)
         elseif response == BattlePassResponse.Error then
             displayErrorBox(tr("Battle Pass"), msg:getString())
         else
@@ -754,7 +839,8 @@ function BattlePass.loadMenu(menuId)
 
     local buttons = {
         challengesMenuButton = 'challengesMenu',
-        rewardsMenuButton = 'rewardsMenu'
+        rewardsMenuButton = 'rewardsMenu',
+        shopMenuButton = 'shopMenu'
     }
 
     -- if menuId == 'challengesMenu' and not BattlePass:running() then
@@ -775,6 +861,7 @@ function BattlePass.loadMenu(menuId)
 
     if menuId == 'challengesMenu' then
         BattlePass.missionPanel:show(true)
+        BattlePass.shopPanel:hide()
         if g_game.isOnline() and BattlePass.progressPanel:isVisible() then
             local nextUnlock = BattlePass.getNextResetWeek(BattlePass.calculateWeekNumber())
             local unlockInfo = BattlePass.window:recursiveGetChildById("unlockInfo")
@@ -785,6 +872,7 @@ function BattlePass.loadMenu(menuId)
         BattlePass.progressPanel:hide()
         BattlePass.window:setHeight(595)
     elseif menuId == 'rewardsMenu' then
+        BattlePass.shopPanel:hide()
         BattlePass.scrollBarWidget:setValue(BattlePass.lastCameraPosition)
         BattlePass.outfitWidget:setDirection(BattlePass.currentRewardStep == 0 and East or North)
         sendToServer("getRewards")
@@ -800,6 +888,14 @@ function BattlePass.loadMenu(menuId)
             BattlePass.window:setHeight(515)
             BattlePass:updatePlayerPosition()
         end, 50)
+    elseif menuId == 'shopMenu' then
+        BattlePass.missionPanel:hide()
+        BattlePass.progressPanel:hide()
+        BattlePass.shopPanel:show(true)
+        BattlePass.window:setHeight(515)
+        if BattlePassShop then
+            BattlePassShop.requestRefresh()
+        end
     end
 
 end
@@ -807,7 +903,8 @@ end
 toggleNextWindow = function()
     local widgetList = {
         "challengesMenu",
-        "rewardsMenu"
+        "rewardsMenu",
+        "shopMenu"
     }
 
     local selectedIndex = nil
@@ -1281,7 +1378,7 @@ function BattlePass:rerollDailyMission(data)
         BattlePass:showBattlePass()
     end
 
-    local message = string.format("Are you sure you want to reroll the mission %s for %s gold?", data.missionName, comma_value(BattlePass.dailyRerollPrice * player:getLevel()))
+    local message = string.format("Are you sure you want to reroll the mission %s for %s gold?", data.missionName, comma_value(BattlePass.dailyRerollPrice))
 
     BattlePass.dailyRerollWindow = displayGeneralBox(tr('Confirm mission reroll'), message, {
         { text=tr('Ok'), callback = okButton },
