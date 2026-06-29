@@ -3921,11 +3921,31 @@ void ProtocolGame::parseCustomItemDetails(const InputMessagePtr& msg)
         npcSaleData.emplace_back(npcName, location, buyPrice, salePrice, currencyQuestFlagDisplayName);
     }
 
+    std::string itemName;
+    if (msg->getUnreadSize() >= 2 && msg->peekU16() + 2 <= msg->getUnreadSize()) {
+        itemName = msg->getString();
+    }
+    if (itemName.empty()) {
+        for (const auto& [detail, description] : descriptions) {
+            std::string lowerDetail = detail;
+            stdext::tolower(lowerDetail);
+            if (lowerDetail == "name") {
+                itemName = description;
+                break;
+            }
+        }
+    }
+    if (msg->getUnreadSize() > 0) {
+        msg->skipBytes(msg->getUnreadSize());
+    }
+
     g_lua.getGlobalField("ItemsDatabase", "registerServerItemDetails");
     if (!g_lua.isNil()) {
         g_lua.pushInteger(itemId);
-        g_lua.createTable(0, 6);
+        g_lua.createTable(0, 7);
 
+        g_lua.pushString(itemName);
+        g_lua.setField("name");
         g_lua.pushNumber(static_cast<double>(defaultValue));
         g_lua.setField("defaultValue");
         g_lua.pushNumber(static_cast<double>(defaultBuyPrice));
@@ -5283,15 +5303,15 @@ void ProtocolGame::parseTaskBoardWeeklyData(const InputMessagePtr& msg)
         const uint8_t amount = msg->getU8();
         const uint8_t required = msg->getU8();
         const uint32_t available = msg->getU32();
-        const uint8_t grade = msg->getU8();
+        const uint8_t claimed = msg->getU8();
         entry["amount"] = stringifyTaskValue(amount);
         entry["required"] = stringifyTaskValue(required);
         entry["available"] = stringifyTaskValue(available);
         entry["current"] = stringifyTaskValue(amount);
         entry["total"] = stringifyTaskValue(required);
-        entry["grade"] = stringifyTaskValue(grade);
-        entry["claimed"] = "0";
-        entry["state"] = amount >= required ? "1" : "0";
+        entry["grade"] = stringifyTaskValue(claimed);
+        entry["claimed"] = stringifyTaskValue(claimed);
+        entry["state"] = (claimed != 0 || amount >= required) ? "1" : "0";
         items.emplace_back(std::move(entry));
     }
 

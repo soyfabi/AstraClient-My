@@ -59,6 +59,47 @@ local DAILY_REWARD_SYSTEM_TYPE_OTHER = 1
 local DAILY_REWARD_SYSTEM_TYPE_PREY_REROLL = 2
 local DAILY_REWARD_SYSTEM_TYPE_XP_BOOST = 3
 
+local function drainUnreadMessage(msg)
+  if msg and msg.getUnreadSize and msg.skipBytes then
+    local unread = tonumber(msg:getUnreadSize()) or 0
+    if unread > 0 then
+      msg:skipBytes(unread)
+    end
+  end
+end
+
+local function readOptionalTrailingString(msg)
+  if not msg or not msg.getUnreadSize or not msg.peekU16 or not msg.getString then
+    return ""
+  end
+
+  local unread = tonumber(msg:getUnreadSize()) or 0
+  if unread < 2 then
+    return ""
+  end
+
+  local length = tonumber(msg:peekU16()) or 0
+  if length + 2 > unread then
+    return ""
+  end
+
+  return msg:getString()
+end
+
+local function getDescriptionDetail(descriptions, detailName)
+  if type(descriptions) ~= "table" then
+    return ""
+  end
+
+  detailName = string.lower(tostring(detailName or ""))
+  for _, description in ipairs(descriptions) do
+    if type(description) == "table" and string.lower(tostring(description.detail or "")) == detailName then
+      return tostring(description.description or "")
+    end
+  end
+  return ""
+end
+
 local function sendDailyRewardPacket(opcode, writer)
   local protocolGame = g_game.getProtocolGame()
   if not protocolGame then
@@ -194,9 +235,15 @@ function registerProtocol()
 			currencyQuestFlagDisplayName = msg:getString()
 		}
 	end
+	local itemName = readOptionalTrailingString(msg)
+	if itemName == "" then
+		itemName = getDescriptionDetail(descriptions, "Name")
+	end
+	drainUnreadMessage(msg)
 
 	if ItemsDatabase and ItemsDatabase.registerServerItemDetails then
 		ItemsDatabase.registerServerItemDetails(itemId, {
+			name = itemName,
 			defaultValue = defaultValue,
 			defaultBuyPrice = defaultBuyPrice,
 			averageMarketValue = averageMarketValue,
@@ -700,23 +747,52 @@ function registerProtocol()
   end)
 
   registerOpcode(ServerPackets.LootContainer, function(protocol, msg)
-	msg:getU8() -- Fallback
-	local size = msg:getU8() -- Quickloot size
+	local fallback = msg:getU8() ~= 0
+	local size = msg:getU8()
+	local lootContainers = {}
+	local obtainContainers = {}
+	local lootList = {}
+
 	for i = 1, size do
-		msg:getU8() -- Category Id
-		msg:getU16() -- Client Id
+		if msg:getUnreadSize() < 3 then
+			break
+		end
+
+		local category = msg:getU8()
+		local lootContainerId = msg:getU16()
+		lootContainers[category] = lootContainerId
+		obtainContainers[category] = 0
+		table.insert(lootList, {category, lootContainerId, 0})
 	end
 
 	if g_game.getFeature(GameQuickLootFlags) and msg:getUnreadSize() >= 1 then
-		local obtainSize = msg:getU8() -- Managed obtain container size
+		local obtainSize = msg:getU8()
 		for i = 1, obtainSize do
 			if msg:getUnreadSize() < 3 then
 				break
 			end
-			msg:getU8() -- Category Id
-			msg:getU16() -- Client Id
+
+			local category = msg:getU8()
+			local obtainContainerId = msg:getU16()
+			obtainContainers[category] = obtainContainerId
+
+			local found = false
+			for _, entry in ipairs(lootList) do
+				if entry[1] == category then
+					entry[3] = obtainContainerId
+					found = true
+					break
+				end
+			end
+
+			if not found then
+				table.insert(lootList, {category, 0, obtainContainerId})
+			end
 		end
 	end
+
+	signalcall(g_game.onParseLootContainers, fallback and 1 or 0, lootContainers, obtainContainers)
+	signalcall(g_game.onQuickLootContainers, fallback, lootList)
   end)
 
   registerOpcode(ServerPackets.ClientCheck, function(protocol, msg)

@@ -312,6 +312,12 @@ function openQuick()
   modules.game_quickloot.showQuickLoot()
 end
 
+function stowAll()
+  sendSupplyStashRequest(ACTION_STOW_ALL)
+  -- Note: Reopen is now triggered automatically by parseSupplyStash
+  -- when server sends the updated stash data after stow-all completes
+end
+
 function refreshStashItems(searchText)
   if not itemsPanel then
     return true
